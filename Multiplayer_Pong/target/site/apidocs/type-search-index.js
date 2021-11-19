@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes","u":"allclasses-index.html"},{"p":"com.mycompany.multiplayer_pong","l":"EntityType"},{"p":"com.mycompany.multiplayer_pong","l":"MultiplayerPongFactory"}];updateSearchResults();
