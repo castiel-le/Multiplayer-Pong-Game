@@ -10,8 +10,7 @@ import static java.lang.Math.signum;
 import javafx.geometry.Point2D;
 
 /**
- *
- * @author Castiel Le
+ * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
  */
 public class BallComponent extends Component{
     private PhysicsComponent physics;

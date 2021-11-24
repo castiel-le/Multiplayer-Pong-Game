@@ -19,10 +19,7 @@ import com.almasb.fxgl.net.Connection;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
-/**
- *
- * @author Castiel Le
- */
+
 public class MultiplayerPongApp extends GameApplication{
     
     private boolean isHost = false;
@@ -74,22 +71,47 @@ public class MultiplayerPongApp extends GameApplication{
     
     @Override
     protected void initGame(){
-        getGameWorld().addEntityFactory(new MultiplayerPongFactory());
-        
-        getGameScene().setBackgroundColor(Color.rgb(0, 0, 5));
-        
-        initScreenBounds();
-        initGameObjects();
-    } 
-    
-    private void initScreenBounds() {
-        Entity walls = entityBuilder()
-                .type(EntityType.WALL)
-                .collidable()
-                .buildScreenBounds(150);
+        runOnce(() -> {
+            getDialogService().showConfirmationBox("Are you the host?", yes -> {
+                isServer = yes;
 
-        getGameWorld().addEntity(walls);
+                //Add background color to the game window.
+                getGameScene().setBackgroundColor(Color.rgb(153, 204, 255));
+                
+                //this line is needed in order for entities to be spawned
+                getGameWorld().addEntityFactory(new BasicGameFactory());
+
+                if (isServer) {
+                    //Setup the TCP port that the server will listen at.
+                    var server = getNetService().newTCPServer(7777);
+                    server.setOnConnected(conn -> {
+                        connection = conn;
+                        
+                        //Setup the entities and other necessary items on the server.
+                        getExecutor().startAsyncFX(() -> onServer());
+                    });
+                    
+                    //Start listening on the specified TCP port.
+                    server.startAsync();
+                    
+                } else {
+                    //Setup the connection to the server.
+                    var client = getNetService().newTCPClient("localhost", 7777);
+                    client.setOnConnected(conn -> {
+                        connection = conn;
+                        
+                        //Enable the client to receive data from the server.
+                        getExecutor().startAsyncFX(() -> onClient());
+                    });
+                    
+                    //Establish the connection to the server.
+                    client.connectAsync();
+                }
+            });
+        }, Duration.seconds(0.5));
     }
+
+
     
     private void initGameObjects() {
         Entity ball = spawn("ball", getAppWidth() / 2 - 5, getAppHeight() / 2 - 5);

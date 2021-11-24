@@ -1,8 +1,7 @@
 package com.mycompany.multiplayer_pong;
 
 /**
- * Create enum type for entity
- * @author Castiel Le
+ * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
  */
 
 public enum EntityType {

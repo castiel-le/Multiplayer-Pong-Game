@@ -5,8 +5,7 @@ import com.almasb.fxgl.entity.component.Component;
 import com.almasb.fxgl.physics.PhysicsComponent;
 
 /**
- *
- * @author Castiel Le
+ * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
  */
 public class BatComponent extends Component {
     private static final double BAT_SPEED = 420;

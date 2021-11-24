@@ -20,10 +20,7 @@ import javafx.scene.effect.BlendMode;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-/**
- *
- * @author Castiel Le
- */
+
 public class MultiplayerPongFactory implements EntityFactory{
     
     /**
