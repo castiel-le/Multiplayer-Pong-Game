@@ -3,7 +3,6 @@ package com.mycompany.multiplayer_pong;
 /**
  * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
  */
-
-public enum EntityType {
-    PLAYER, BALL, WALL
+public enum  EntityType {
+    PLAYER_BAT, ENEMY_BAT, BALL, WALL
 }
