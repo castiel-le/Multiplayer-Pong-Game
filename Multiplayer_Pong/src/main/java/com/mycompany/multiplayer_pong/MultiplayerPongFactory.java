@@ -92,18 +92,36 @@ public class MultiplayerPongFactory implements EntityFactory {
 
     @Spawns("bat")
     public Entity newBat(SpawnData data) {
-        boolean isPlayer = data.get("isPlayer");
-
-        PhysicsComponent physics = new PhysicsComponent();
-        physics.setBodyType(BodyType.KINEMATIC);
-
-        return entityBuilder()
-                .from(data)
-                .type(isPlayer ? EntityType.PLAYER_BAT : EntityType.ENEMY_BAT)
-                .viewWithBBox(new Rectangle(20, 60, Color.LIGHTGRAY))
-                .with(new CollidableComponent(true))
-                .with(physics)
-                .with(isPlayer ? new BatComponent() : new EnemyBatComponent())
-                .build();
+        boolean isServer = data.hasKey("isServer");
+        if(isServer){
+            PhysicsComponent physics = new PhysicsComponent();
+            physics.setBodyType(BodyType.KINEMATIC);
+            
+            return entityBuilder()
+                    .from(data)
+                    .type(EntityType.PLAYER_BAT)
+                    .viewWithBBox(new Rectangle(20, 60, Color.LIGHTGRAY))
+                    .with(new CollidableComponent(true))
+                    .with(physics)
+                    .with(new BatComponent())
+                    .build();
+        }
+        else{
+            return entityBuilder()
+                    .type(EntityType.PLAYER_BAT)
+                    .viewWithBBox(new Rectangle(20, 60, Color.LIGHTGRAY))
+                    .build();
+        }
+//        PhysicsComponent physics = new PhysicsComponent();
+//        physics.setBodyType(BodyType.KINEMATIC);
+//
+//        return entityBuilder()
+//                .from(data)
+//                .type(isServer ? EntityType.PLAYER_BAT : EntityType.ENEMY_BAT)
+//                .viewWithBBox(new Rectangle(20, 60, Color.LIGHTGRAY))
+//                .with(new CollidableComponent(true))
+//                .with(physics)
+//                .with(new BatComponent())
+//                .build();
     }
 }
