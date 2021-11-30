@@ -75,31 +75,31 @@ public class MultiplayerPongApp extends GameApplication {
         settings.addEngineService(MultiplayerService.class);
     }
 
-    private BatComponent playerBat;
+    private BatComponent player1Bat;
+    private BatComponent player2Bat;
 
-    @Override
-    protected void initInput() {
+    protected void initServerInput() {
         getInput().addAction(new UserAction("Up") {
             @Override
             protected void onAction() {
-                playerBat.up();
+                player1Bat.up();
             }
 
             @Override
             protected void onActionEnd() {
-                playerBat.stop();
+                player1Bat.stop();
             }
         }, KeyCode.W);
 
         getInput().addAction(new UserAction("Down") {
             @Override
             protected void onAction() {
-                playerBat.down();
+                player1Bat.down();
             }
 
             @Override
             protected void onActionEnd() {
-                playerBat.stop();
+                player1Bat.stop();
             }
         }, KeyCode.S);
         
@@ -108,24 +108,24 @@ public class MultiplayerPongApp extends GameApplication {
         clientInput.addAction(new UserAction("Up") {
             @Override
             protected void onAction() {
-                playerBat.up();
+                player2Bat.up();
             }
 
             @Override
             protected void onActionEnd() {
-                playerBat.stop();
+                player2Bat.stop();
             }
         }, KeyCode.W);
 
         clientInput.addAction(new UserAction("Down") {
             @Override
             protected void onAction() {
-                playerBat.down();
+                player2Bat.down();
             }
 
             @Override
             protected void onActionEnd() {
-                playerBat.stop();
+                player2Bat.stop();
             }
         }, KeyCode.S);
     }
@@ -150,7 +150,7 @@ public class MultiplayerPongApp extends GameApplication {
 
                 if (isServer) {
                     //Setup the TCP port that the server will listen at.
-                    var server = getNetService().newTCPServer(7777);
+                    var server = getNetService().newTCPServer(7778);
                     server.setOnConnected(conn -> {
                         connection = conn;
                         
@@ -163,7 +163,7 @@ public class MultiplayerPongApp extends GameApplication {
                     
                 } else {
                     //Setup the connection to the server.
-                    var client = getNetService().newTCPClient("localhost", 7777);
+                    var client = getNetService().newTCPClient("localhost", 7778);
                     client.setOnConnected(conn -> {
                         connection = conn;
                         
@@ -190,8 +190,7 @@ public class MultiplayerPongApp extends GameApplication {
 
     }
 
-    @Override
-    protected void initPhysics() {
+    protected void initServerPhysics() {
         getPhysicsWorld().setGravity(0, 0);
 
         getPhysicsWorld().addCollisionHandler(new CollisionHandler(EntityType.BALL, EntityType.WALL) {
@@ -208,7 +207,7 @@ public class MultiplayerPongApp extends GameApplication {
             }
         });
 
-        CollisionHandler ballBatHandler = new CollisionHandler(EntityType.BALL, EntityType.PLAYER_BAT) {
+        CollisionHandler ballBatHandler = new CollisionHandler(EntityType.BALL, EntityType.PLAYER1) {
             @Override
             protected void onCollisionBegin(Entity a, Entity bat) {
                 play("hit_bat.wav");
@@ -217,7 +216,7 @@ public class MultiplayerPongApp extends GameApplication {
         };
 
         getPhysicsWorld().addCollisionHandler(ballBatHandler);
-        getPhysicsWorld().addCollisionHandler(ballBatHandler.copyFor(EntityType.BALL, EntityType.ENEMY_BAT));
+        getPhysicsWorld().addCollisionHandler(ballBatHandler.copyFor(EntityType.BALL, EntityType.PLAYER2));
     }
 
     @Override
@@ -270,20 +269,35 @@ public class MultiplayerPongApp extends GameApplication {
     private void onServer() {
         
         initScreenBounds();
+        initServerInput();
+        initServerPhysics();
         
         //Spawn the player for the server
         ball = spawn("ball", new SpawnData(getAppWidth() / 2 - 5, getAppHeight() / 2 - 5).put("isServer", true));
+        getService(MultiplayerService.class).spawn(connection, ball, "ball");
         player1 = spawn("bat", new SpawnData(getAppWidth() / 4, getAppHeight() / 2 - 30).put("isServer", true));
+        getService(MultiplayerService.class).spawn(connection, player1, "bat");
         player2 = spawn("bat", new SpawnData(3 * getAppWidth() / 4 - 20, getAppHeight() / 2 - 30).put("isServer", true));
+        getService(MultiplayerService.class).spawn(connection, player2, "bat");
         
+        getService(MultiplayerService.class).addPropertyReplicationSender(connection, getWorldProperties());
         getService(MultiplayerService.class).addInputReplicationReceiver(connection, clientInput);
         
-        initPhysics();
+        player1Bat = player1.getComponent(BatComponent.class);
+        player2Bat = player2.getComponent(BatComponent.class);
     }
      
      private void onClient(){
          getService(MultiplayerService.class).addEntityReplicationReceiver(connection, getGameWorld());
          getService(MultiplayerService.class).addInputReplicationSender(connection, getInput());
-         
+         getService(MultiplayerService.class).addPropertyReplicationReceiver(connection, getWorldProperties());
      }
+     
+     @Override
+    protected void onUpdate(double tpf) {
+        //checking if client is not null to not run the game without client
+        if (isServer && (clientInput!=null)) {
+            clientInput.update(tpf);
+        }
+    }
 }

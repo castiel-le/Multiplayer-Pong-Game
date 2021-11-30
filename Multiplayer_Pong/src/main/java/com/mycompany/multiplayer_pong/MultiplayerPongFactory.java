@@ -48,6 +48,7 @@ import javafx.scene.shape.Rectangle;
 
 import static com.almasb.fxgl.dsl.FXGL.entityBuilder;
 import static com.almasb.fxgl.dsl.FXGL.getip;
+import com.almasb.fxgl.multiplayer.NetworkComponent;
 
 /**
  * @author Almas Baimagambetov (AlmasB) (almaslvl@gmail.com)
@@ -79,15 +80,26 @@ public class MultiplayerPongFactory implements EntityFactory {
         emitter.setBlendMode(BlendMode.SRC_OVER);
         emitter.setSize(5, 10);
         emitter.setEmissionRate(1);
-
-        return entityBuilder(data)
-                .type(EntityType.BALL)
-                .bbox(new HitBox(BoundingShape.circle(5)))
-                .with(physics)
-                .with(new CollidableComponent(true))
-                .with(new ParticleComponent(emitter))
-                .with(new BallComponent())
-                .build();
+        boolean isServer = data.hasKey("isServer");
+        if(isServer){
+            return entityBuilder(data)
+                    .type(EntityType.BALL)
+                    .bbox(new HitBox(BoundingShape.circle(5)))
+                    .with(new NetworkComponent())
+                    .with(physics)
+                    .with(new CollidableComponent(true))
+                    .with(new ParticleComponent(emitter))
+                    .with(new BallComponent())
+                    .build();
+        }
+        else{
+            return entityBuilder(data)
+                    .type(EntityType.BALL)
+                    .bbox(new HitBox(BoundingShape.circle(5)))
+                    .with(new NetworkComponent())
+                    .with(new ParticleComponent(emitter))
+                    .build();
+        }
     }
 
     @Spawns("bat")
@@ -99,8 +111,9 @@ public class MultiplayerPongFactory implements EntityFactory {
             
             return entityBuilder()
                     .from(data)
-                    .type(EntityType.PLAYER_BAT)
+                    .type(EntityType.PLAYER1)
                     .viewWithBBox(new Rectangle(20, 60, Color.LIGHTGRAY))
+                    .with(new NetworkComponent())
                     .with(new CollidableComponent(true))
                     .with(physics)
                     .with(new BatComponent())
@@ -108,7 +121,8 @@ public class MultiplayerPongFactory implements EntityFactory {
         }
         else{
             return entityBuilder()
-                    .type(EntityType.PLAYER_BAT)
+                    .type(EntityType.PLAYER2)
+                    .with(new NetworkComponent())
                     .viewWithBBox(new Rectangle(20, 60, Color.LIGHTGRAY))
                     .build();
         }
