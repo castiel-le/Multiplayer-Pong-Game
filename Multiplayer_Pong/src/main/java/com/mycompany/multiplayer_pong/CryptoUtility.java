@@ -20,7 +20,7 @@ import javax.crypto.spec.SecretKeySpec;
  *
  * @author Alex
  */
-public class CustomKeyStore {
+public class CryptoUtility {
 
     private KeyStore ks;
     private KeyStore.PasswordProtection passProtection;
@@ -32,7 +32,7 @@ public class CustomKeyStore {
      * @param password
      * @throws IOException
      */
-    public CustomKeyStore(char[] password) throws IOException {
+    public CryptoUtility(char[] password) throws IOException {
         //Ensure the use of "JavaFX Password Field UI control" or something similar
 
         fsInput = null;
@@ -65,7 +65,7 @@ public class CustomKeyStore {
         return messageDigest.digest(message.getBytes(StandardCharsets.UTF_8));
     }
     
-    public void encryptFile(String algo, SecretKey secretKey, )
+   // public void encryptFile(String algo, SecretKey secretKey, )
     
     /**
      * Creates secret key of type ECDSA with password
