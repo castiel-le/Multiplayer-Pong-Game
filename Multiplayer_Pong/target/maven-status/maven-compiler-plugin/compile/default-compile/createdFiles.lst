@@ -9,13 +9,17 @@ com\mycompany\multiplayer_pong\MultiplayerPongFactory.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$1.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$7.class
+com\mycompany\multiplayer_pong\MultiplayerPongBtn.class
 com\mycompany\multiplayer_pong\EntityType.class
 com\mycompany\multiplayer_pong\BatComponent.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$2.class
 <<<<<<< HEAD
+<<<<<<< HEAD
 com\mycompany\multiplayer_pong\FGXLMenu.class
 =======
 >>>>>>> 95ecc8de0701277d1e93926b116cb3605b3c3f21
+=======
+>>>>>>> 029d618e73a832a3789fb8d24e8df74e673cbf5d
 com\mycompany\multiplayer_pong\MultiplayerPongApp$3.class
 com\mycompany\multiplayer_pong\BallComponent.class
 com\mycompany\multiplayer_pong\MultiplayerPongGameMenu.class

@@ -106,16 +106,16 @@ public class MultiplayerPongApp extends GameApplication {
         settings.setSceneFactory(new SceneFactory() {
             @Override
             public MultiplayerPongMainMenu newMainMenu() {
-                return new MultiplayerPongMainMenu(MenuType.MAIN_MENU);
+                return new MultiplayerPongMainMenu();
             }
 
             @Override
             public MultiplayerPongGameMenu newGameMenu() {
-                return new MultiplayerPongGameMenu(MenuType.GAME_MENU);
+                return new MultiplayerPongGameMenu();
             }
         });
-        //settings.setMainMenuEnabled(true);
-        //settings.setGameMenuEnabled(true);
+        settings.setMainMenuEnabled(true);
+        settings.setGameMenuEnabled(true);
     }
 
     private BatComponent player1Bat;
@@ -205,17 +205,19 @@ public class MultiplayerPongApp extends GameApplication {
                     server.startAsync();
                     
                 } else {
+                    getDialogService().showInputBox("Enter Host IP:", x ->{
                     //Setup the connection to the server.
-                    var client = getNetService().newTCPClient("localhost", 7778);
-                    client.setOnConnected(conn -> {
-                        connection = conn;
+                        var client = getNetService().newTCPClient("localhost", 7778);
+                        client.setOnConnected(conn -> {
+                            connection = conn;
                         
-                        //Enable the client to receive data from the server.
-                        getExecutor().startAsyncFX(() -> onClient());
-                    });
+                            //Enable the client to receive data from the server.
+                            getExecutor().startAsyncFX(() -> onClient());
+                        });
                     
-                    //Establish the connection to the server.
-                    client.connectAsync();
+                        //Establish the connection to the server.
+                        client.connectAsync();
+                    });
                 }
             });
         }, Duration.seconds(0.5));
