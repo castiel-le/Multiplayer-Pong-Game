@@ -78,16 +78,16 @@ public class MultiplayerPongApp extends GameApplication {
         settings.setSceneFactory(new SceneFactory() {
             @Override
             public MultiplayerPongMainMenu newMainMenu() {
-                return new MultiplayerPongMainMenu(MenuType.MAIN_MENU);
+                return new MultiplayerPongMainMenu();
             }
 
             @Override
             public MultiplayerPongGameMenu newGameMenu() {
-                return new MultiplayerPongGameMenu(MenuType.GAME_MENU);
+                return new MultiplayerPongGameMenu();
             }
         });
-        //settings.setMainMenuEnabled(true);
-        //settings.setGameMenuEnabled(true);
+        settings.setMainMenuEnabled(true);
+        settings.setGameMenuEnabled(true);
     }
 
     private BatComponent player1Bat;

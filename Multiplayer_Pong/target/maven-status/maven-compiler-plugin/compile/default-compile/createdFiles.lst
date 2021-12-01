@@ -8,10 +8,10 @@ com\mycompany\multiplayer_pong\MultiplayerPongFactory.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$1.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$7.class
+com\mycompany\multiplayer_pong\MultiplayerPongBtn.class
 com\mycompany\multiplayer_pong\EntityType.class
 com\mycompany\multiplayer_pong\BatComponent.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$2.class
-com\mycompany\multiplayer_pong\FGXLMenu.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$3.class
 com\mycompany\multiplayer_pong\BallComponent.class
 com\mycompany\multiplayer_pong\MultiplayerPongGameMenu.class
