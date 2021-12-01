@@ -1,4 +1,4 @@
-package com.mycompany.multiplayer_pong;
+    package com.mycompany.multiplayer_pong;
 
 /*
  * The MIT License (MIT)
@@ -43,6 +43,34 @@ import com.almasb.fxgl.ui.UI;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 import java.util.Map;
 
@@ -276,10 +304,24 @@ public class MultiplayerPongApp extends GameApplication {
     }
 
     private void showGameOver(String winner) {
+        
+        
+        String curveName = "secp256r1";
+        KeyPair keypair = generateKeyPairECDSA(curveName);
+        PrivateKey priv = keypair.getPrivate();
+        String algorithm = "SHA1withECDSA";
+        String message = "This is the message to be signed.";
+        byte[] signature = generateSignature(algorithm, priv, message);
+        writeByte(signature);
+        
+        
+        
+        
         getDialogService().showMessageBox(winner + " won! Demo over\nThanks for playing", getGameController()::exit);
     }
 
     public static void main(String[] args) {
+        
         launch(args);
     }
     
@@ -317,4 +359,82 @@ public class MultiplayerPongApp extends GameApplication {
             clientInput.update(tpf);
         }
     }
+    
+    KeyPair generateKeyPairECDSA(String curveName) {
+        
+        KeyPair keypair = null;
+        try {
+        ECGenParameterSpec ecParaSpec = new ECGenParameterSpec(curveName);
+        
+        /**
+         * getInstance method of the key pair generator takes the label "EC"
+         * and the Provider ("SunEC") for the Crypto schemes.
+         */
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", "SunEC");
+        generator.initialize(ecParaSpec);
+        
+        //Generate the key pair
+        keypair = generator.genKeyPair();
+        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | NoSuchProviderException e) {
+            System.out.println("\nERROR occured while generating keypair.");
+        }
+        return keypair;
+    }
+    
+    
+    byte[] generateSignature (String algorithm, PrivateKey privatekey, String message){
+        
+        byte[] signature = null;
+        try {
+        //Create an instance of the signature scheme for the given signature algorithm
+        Signature sig = Signature.getInstance(algorithm, "SunEC");
+        
+        //Initialize the signature scheme
+        sig.initSign(privatekey);
+        
+        //Compute the signature
+        sig.update(message.getBytes("UTF-8"));
+        signature = sig.sign();
+        
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | UnsupportedEncodingException | SignatureException e) {
+            System.out.println("\nERROR occured while generating signature.");
+        }
+        
+        return signature;
+    }
+    
+    
+    static void writeByte(byte[] bytes)
+    {
+        try {
+  
+            // Initialize a pointer
+            // in file using OutputStream
+            OutputStream
+                os
+                = new FileOutputStream("PongApp.sig");
+  
+            // Starts writing the bytes in it
+            os.write(bytes);
+            System.out.println("Successfully"
+                               + " byte inserted");
+  
+            // Close the file
+            os.close();
+        }
+  
+        catch (Exception e) {
+            System.out.println("Exception: " + e);
+        }
+    }
+    
+    
+    
+    
+    
+
+
+    
+    
+    
 }
