@@ -30,6 +30,8 @@ package com.mycompany.multiplayer_pong;
 import com.almasb.fxgl.animation.Interpolators;
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
+import com.almasb.fxgl.app.scene.MenuType;
+import com.almasb.fxgl.app.scene.SceneFactory;
 import com.almasb.fxgl.core.math.FXGLMath;
 import com.almasb.fxgl.core.serialization.Bundle;
 import com.almasb.fxgl.entity.Entity;
@@ -73,6 +75,19 @@ public class MultiplayerPongApp extends GameApplication {
         settings.setVersion("1.0");
         settings.setFontUI("pong.ttf");
         settings.addEngineService(MultiplayerService.class);
+        settings.setSceneFactory(new SceneFactory() {
+            @Override
+            public MultiplayerPongMainMenu newMainMenu() {
+                return new MultiplayerPongMainMenu();
+            }
+
+            @Override
+            public MultiplayerPongGameMenu newGameMenu() {
+                return new MultiplayerPongGameMenu();
+            }
+        });
+        settings.setMainMenuEnabled(true);
+        settings.setGameMenuEnabled(true);
     }
 
     private BatComponent player1Bat;
@@ -162,17 +177,19 @@ public class MultiplayerPongApp extends GameApplication {
                     server.startAsync();
                     
                 } else {
+                    getDialogService().showInputBox("Enter Host IP:", x ->{
                     //Setup the connection to the server.
-                    var client = getNetService().newTCPClient("localhost", 7778);
-                    client.setOnConnected(conn -> {
-                        connection = conn;
+                        var client = getNetService().newTCPClient("localhost", 7778);
+                        client.setOnConnected(conn -> {
+                            connection = conn;
                         
-                        //Enable the client to receive data from the server.
-                        getExecutor().startAsyncFX(() -> onClient());
-                    });
+                            //Enable the client to receive data from the server.
+                            getExecutor().startAsyncFX(() -> onClient());
+                        });
                     
-                    //Establish the connection to the server.
-                    client.connectAsync();
+                        //Establish the connection to the server.
+                        client.connectAsync();
+                    });
                 }
             });
         }, Duration.seconds(0.5));
