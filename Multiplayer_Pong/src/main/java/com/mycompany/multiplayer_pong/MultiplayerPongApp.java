@@ -207,7 +207,7 @@ public class MultiplayerPongApp extends GameApplication {
                 } else {
                     getDialogService().showInputBox("Enter Host IP:", x ->{
                     //Setup the connection to the server.
-                        var client = getNetService().newTCPClient("localhost", 7778);
+                        var client = getNetService().newTCPClient(x, 7778);
                         client.setOnConnected(conn -> {
                             connection = conn;
                         
