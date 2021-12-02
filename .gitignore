@@ -1,5 +1,8 @@
 *.class
 
+# KeyStore Files #
+*.p12
+
 # Package Files #
 *.war
 *.ear
