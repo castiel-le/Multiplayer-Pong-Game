@@ -69,7 +69,7 @@ public class CryptoUtility {
      * Checks if a keystore.p12 file exists
      * @return 
      */
-    private boolean checkKeyStoreExists() {
+    public boolean checkKeyStoreExists() {
         return new File("src\\main\\resources\\keystore.p12").exists();
     }
     
