@@ -250,7 +250,7 @@ public class MultiplayerPongApp extends GameApplication {
         Pattern pattern = Pattern.compile("[<>]");
         Matcher matcher = pattern.matcher(normalized);
         
-        if(matcher.find() && !Pattern.matches("[0-9]\\." , normalized)){
+        if(matcher.find() && !Pattern.matches("([0-9]{1,3}\\.){1,3}[0-9]{1,3}" , normalized)){
             System.out.println("Black listed character found in input and does not match IP pattern!!");
         }
         else{
