@@ -152,7 +152,7 @@ public class CryptoUtility {
      * @param secretKey
      * @param alias 
      */
-    public void storeEntry(SecretKey secretKey, String alias) {
+    public void storeSecretKeyEntry(SecretKey secretKey, String alias) {
         KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
         try {
             ks.setEntry(alias, secretKeyEntry, passProtection);
