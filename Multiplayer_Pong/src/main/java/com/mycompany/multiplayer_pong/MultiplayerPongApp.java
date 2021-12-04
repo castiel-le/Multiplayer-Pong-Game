@@ -244,9 +244,15 @@ public class MultiplayerPongApp extends GameApplication {
         });
 
     }
-    
-    protected String normalizeIP(String x){
-        String normalized = Normalizer.normalize(x, Form.NFKC);
+    /**
+     * method that checks and normalizes the user input of the ip address
+     * then proceeds to check for illegal patterns and if it matches the ip address pattern.
+     * It normalizes it to NFKC form.
+     * @param ip string that is the ip
+     * @return normalized version of the ip address
+     */
+    protected String normalizeIP(String ip){
+        String normalized = Normalizer.normalize(ip, Form.NFKC);
         Pattern pattern = Pattern.compile("[<>]");
         Matcher matcher = pattern.matcher(normalized);
         
