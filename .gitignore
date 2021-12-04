@@ -34,3 +34,4 @@ system/
 
 # Space Invaders #
 *.dat
+/Multiplayer_Pong/nbproject/

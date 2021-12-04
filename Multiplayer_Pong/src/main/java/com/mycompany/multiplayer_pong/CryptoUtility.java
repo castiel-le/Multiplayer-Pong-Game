@@ -25,26 +25,35 @@ public class CryptoUtility {
     private KeyStore ks;
     private KeyStore.PasswordProtection passProtection;
     private char[] ksPassword;
-    private FileInputStream fsInput;
 
     /**
-     *  Constructor. 
+     *  Constructor for creating a new KeyStore file. 
      * @param password
      * @throws IOException
      */
     public CryptoUtility(char[] password) throws IOException {
         //Ensure the use of "JavaFX Password Field UI control" or something similar
-
-        fsInput = null;
+        FileInputStream fis = null;
         try {
-            ks = KeyStore.getInstance("PKCS12");
-            fsInput = new FileInputStream("src\\main\\resources\\keystore.p12");
-            ks.load(fsInput, password);
-        } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
+            if (new File("src\\main\\resources\\keystore.p12").exists()) {
+                fis = new FileInputStream("src\\main\\resources\\keystore.p12");
+            }
+            ks.load(fis, password);
+        } catch (NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
         }
-        this.passProtection = new KeyStore.PasswordProtection(password);
-        closeFSInput();
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream("src\\main\\resources\\keystore.p12");
+            ks.store(fos, password);
+        } catch (IOException | KeyStoreException | NoSuchAlgorithmException 
+                                                 | CertificateException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private boolean checkKeyStore() {
+        return new File("src\\main\\resources\\keystore.p12").exists();
     }
     
     /**
@@ -66,25 +75,19 @@ public class CryptoUtility {
     }
     
    // public void encryptFile(String algo, SecretKey secretKey, )
-    
-    /**
-     * Creates secret key of type ECDSA with password
-     * @param keyPassword
-     * @return 
-     */
-    public SecretKey generateSecretKeyWithPassword(String keyPassword) {
-        
-        return new SecretKeySpec(keyPassword.getBytes(), "ECDSA");
-    }
+  
     
     /**
      * Generates secret key using AES
-     * @param n should be a value of 128, 192 or 256
+     * @param n size should be a value of 128, 192 or 256
      * @return 
      */
     public SecretKey generateSecretKey(int n) {
         // n 
         KeyGenerator keyGen = null;
+        if (n == 128 || n == 192 || n == 256) {
+            
+        }
         try {
             keyGen = KeyGenerator.getInstance("AES");
             keyGen.init(n);
@@ -100,35 +103,30 @@ public class CryptoUtility {
      * @throws IOException 
      */
     public void storeKeyStore() throws IOException {
-        try {
-            FileOutputStream fsOutput = new FileOutputStream("src\\main\\resources\\keystore.p12");
-        
-            ks.store(fsOutput, ksPassword);
-            System.out.println("Key stored");
-        } catch (KeyStoreException | FileNotFoundException | NoSuchAlgorithmException
-                                   | CertificateException e) {
-            e.printStackTrace();
+        if (new File("src\\main\\resources\\keystore.p12").exists()) {
+            try {
+                FileOutputStream fsOutput = new FileOutputStream("src\\main\\resources\\keystore.p12");
+
+                ks.store(fsOutput, ksPassword);
+                System.out.println("Key stored");
+            } catch (KeyStoreException | FileNotFoundException | NoSuchAlgorithmException
+                                       | CertificateException e) {
+                e.printStackTrace();
+            }
         }
     }
     
+    /**
+     * Stores an entry in 
+     * @param secretKey
+     * @param alias 
+     */
     public void storeEntry(SecretKey secretKey, String alias) {
         KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
         try {
             ks.setEntry(alias, secretKeyEntry, passProtection);
             System.out.println("Secret key entry stored in the KeyStore.");
         } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    /**
-     * Releases resources used by FileInputStream by closing it
-     * Helper method
-     */
-    private void closeFSInput() {
-        try {
-            fsInput.close();
-        } catch (IOException e) {
             e.printStackTrace();
         }
     }
