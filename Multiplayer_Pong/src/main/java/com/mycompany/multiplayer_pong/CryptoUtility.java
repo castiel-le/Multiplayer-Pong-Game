@@ -133,7 +133,7 @@ public class CryptoUtility {
      * Stores KeyStore object in "src\main\resources\keystore.p12"
      * @throws IOException 
      */
-    public void storeKeyStore() throws IOException {
+    /*public void storeKeyStore() throws IOException {
         if (new File("src\\main\\resources\\keystore.p12").exists()) {
             try {
                 FileOutputStream fsOutput = new FileOutputStream("src\\main\\resources\\keystore.p12");
@@ -145,10 +145,10 @@ public class CryptoUtility {
                 e.printStackTrace();
             }
         }
-    }
+    }*/
     
     /**
-     * Stores an entry in 
+     * Stores a secret key entry in the KeyStore
      * @param secretKey
      * @param alias 
      */
