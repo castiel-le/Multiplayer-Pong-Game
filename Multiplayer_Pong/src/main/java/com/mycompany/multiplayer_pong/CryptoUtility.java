@@ -90,7 +90,7 @@ public class CryptoUtility {
      * @param message
      * @return
      */
-    private char[] computeHash(String message) {
+    public char[] computeHash(String message) {
         char[] hash = null;
         MessageDigest messageDigest = null;
         try {
@@ -149,6 +149,7 @@ public class CryptoUtility {
     
     /**
      * Stores a secret key entry in the KeyStore
+     * User should be asked to verify KeyStore password in this operation
      * @param secretKey
      * @param alias 
      */
