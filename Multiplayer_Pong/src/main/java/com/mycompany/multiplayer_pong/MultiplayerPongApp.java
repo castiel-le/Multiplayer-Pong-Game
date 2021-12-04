@@ -71,6 +71,13 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.text.Normalizer.Form;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 
 import java.util.Map;
 
@@ -78,6 +85,7 @@ import static com.almasb.fxgl.dsl.FXGL.*;
 import com.almasb.fxgl.input.Input;
 import com.almasb.fxgl.multiplayer.MultiplayerService;
 import com.almasb.fxgl.net.Connection;
+import java.text.Normalizer;
 
 /**
  * A simple clone of Pong.
@@ -206,6 +214,8 @@ public class MultiplayerPongApp extends GameApplication {
                     
                 } else {
                     getDialogService().showInputBox("Enter Host IP:", x ->{
+                        //normalizing x which is the ip input
+                        normalizeIP(x);
                     //Setup the connection to the server.
                         var client = getNetService().newTCPClient(x, 7778);
                         client.setOnConnected(conn -> {
@@ -233,6 +243,20 @@ public class MultiplayerPongApp extends GameApplication {
             }
         });
 
+    }
+    
+    protected String normalizeIP(String x){
+        String normalized = Normalizer.normalize(x, Form.NFKC);
+        Pattern pattern = Pattern.compile("[<>]");
+        Matcher matcher = pattern.matcher(normalized);
+        
+        if(matcher.find() && !Pattern.matches("[0-9]\\." , normalized)){
+            System.out.println("Black listed character found in input and does not match IP pattern!!");
+        }
+        else{
+            System.out.println("Input string is acceptable");
+        }
+        return normalized;
     }
 
     protected void initServerPhysics() {
