@@ -717,16 +717,3 @@ public class MultiplayerPongApp extends GameApplication {
         return validSignature;
     }
 }
-
-    
-}
-    
-    
-    
-    
-    
-
-
-    
-    
-    
