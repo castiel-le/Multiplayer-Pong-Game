@@ -140,6 +140,8 @@ public class MultiplayerPongApp extends GameApplication {
 
     private boolean pauseState = false;
 
+    private boolean validLoad = false;
+
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setTitle("Pong");
@@ -245,8 +247,27 @@ public class MultiplayerPongApp extends GameApplication {
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
                 if (isServer) {
+<<<<<<< HEAD
                     // TODO : prompt keystore if doesn't exist, or if user saves/loads
                     //  CryptoUtility ks = new CryptoUtility(ksPassword); 
+=======
+                    getDialogService().showConfirmationBox("Do you want to load old games?", load -> {
+                        if(load){
+                            while(!validLoad){
+                                try{
+                                    loadSavedGame();
+                                    System.out.println("load");
+                                    validLoad = true;
+                                }
+                                catch (IOException e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        } else{
+                            System.out.print("new");
+                        }
+                    });
+>>>>>>> 90ce3230b20239847539614aef16809bed394b52
                     //Setup the TCP port that the server will listen at.
                     var server = getNetService().newTCPServer(7778);
                     server.setOnConnected(connection -> {
@@ -497,19 +518,14 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
 
-    public static void loadSavedGame(){
-        getDialogService().showInputBox("Enter Saved Game's Name", savedName ->{
+    public void loadSavedGame() throws IOException{
+        getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
             String savedPath = savedName + ".sav";
-            try {
-                getSaveLoadService().readAndLoadTask(savedPath).run();
-            }
-            catch (Exception exception){
-                getDialogService().showMessageBox("No Save Found!");
-                loadSavedGame();
-            }
+
+            getSaveLoadService().readAndLoadTask(savedPath).run();
+            System.out.println(savedPath);
         });
     }
-    
     KeyPair generateKeyPairECDSA(String curveName) {
         
         KeyPair keypair = null;
