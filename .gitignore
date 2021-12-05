@@ -1,4 +1,5 @@
 *.class
+*.sig
 
 # KeyStore Files #
 *.p12
