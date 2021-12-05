@@ -79,8 +79,6 @@ import java.util.regex.Pattern;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
-
 import java.io.IOException;
 import java.util.Map;
 
@@ -88,8 +86,36 @@ import static com.almasb.fxgl.dsl.FXGL.*;
 import com.almasb.fxgl.input.Input;
 import com.almasb.fxgl.multiplayer.MultiplayerService;
 import com.almasb.fxgl.net.Connection;
+import java.math.BigInteger;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 import java.text.Normalizer;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Scanner;
+    
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.DigestCalculator;
+import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.cert.CertIOException;
+import org.bouncycastle.cert.X509ExtensionUtils;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+    
+import com.mycompany.multiplayer_pong.Crypto;
 
 /**
  * A simple clone of Pong.
@@ -356,15 +382,33 @@ public class MultiplayerPongApp extends GameApplication {
 
     private void showGameOver(String winner) {
         
-        
+        File pongAppJava = new File("src\\main\\java\\com\\mycompany\\multiplayer_pong\\MultiplayerPongApp.java");
+        Scanner read = null;
+        String message = "";
+        try {
+            read = new Scanner(pongAppJava);
+            while (read.hasNext()) {
+                message += read.nextLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            read.close();
+        }
         String curveName = "secp256r1";
-        KeyPair keypair = generateKeyPairECDSA(curveName);
-        PrivateKey priv = keypair.getPrivate();
+        KeyPair keyPair = generateKeyPairECDSA(curveName);
+        PrivateKey priv = keyPair.getPrivate();
         String algorithm = "SHA1withECDSA";
-        String message = "This is the message to be signed.";
+        //String message = "This is the message to be signed.";
         byte[] signature = generateSignature(algorithm, priv, message);
         writeByte(signature);
-        
+        Certificate cert = null;
+        try {
+            cert = genCertificate(keyPair, algorithm, "selfSignedCert", 28);
+        } catch (OperatorCreationException | CertIOException | CertificateException e) {
+            e.printStackTrace();
+        }
+        Certificate[] chain = { cert };
+        storePrivateKeyEntry(priv, "privateKey", chain);
         
         
         
@@ -482,6 +526,36 @@ public class MultiplayerPongApp extends GameApplication {
         return keypair;
     }
     
+    private static X509Certificate genCertificate(KeyPair keyPair, String algo, String name, int days) throws OperatorCreationException,
+            CertIOException, CertificateException {
+        Instant now = Instant.now();
+        Date before = Date.from(now);
+        Date after = Date.from(now.plus(java.time.Duration.ofDays(days)));
+        ContentSigner contentSigner = new JcaContentSignerBuilder(algo).build(keyPair.getPrivate());
+        X500Name x500Name = new X500Name("CN=" + name);
+        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(x500Name, BigInteger.valueOf(now.toEpochMilli()),
+                                                                                before, after, x500Name, keyPair.getPublic())
+                                                                                                           .addExtension(Extension.subjectKeyIdentifier, false, hashPublicKey(keyPair.getPublic()))
+                                                                                                           .addExtension(Extension.authorityKeyIdentifier, false, hashAuthorityPublicKey(keyPair.getPublic()))
+                                                                                                           .addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+        return new JcaX509CertificateConverter().getCertificate(certBuilder.build(contentSigner));
+    }
+    
+    private static SubjectKeyIdentifier hashPublicKey(PublicKey publicKey) throws OperatorCreationException, 
+            CertIOException {
+        SubjectPublicKeyInfo info = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
+        
+        DigestCalculator digest = new BcDigestCalculatorProvider().get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
+        
+        return new X509ExtensionUtils(digest).createSubjectKeyIdentifier(info);
+    }
+    
+    private static AuthorityKeyIdentifier hashAuthorityPublicKey(PublicKey publicKey) throws OperatorCreationException {
+        SubjectPublicKeyInfo info = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
+        DigestCalculator digest = new BcDigestCalculatorProvider().get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
+        return new X509ExtensionUtils(digest).createAuthorityKeyIdentifier(info);
+    }
+    
     
     byte[] generateSignature (String algorithm, PrivateKey privatekey, String message){
         
@@ -513,7 +587,7 @@ public class MultiplayerPongApp extends GameApplication {
             // in file using OutputStream
             OutputStream
                 os
-                = new FileOutputStream("PongApp.sig");
+                = new FileOutputStream("src\\main\\resources\\PongApp.sig");
   
             // Starts writing the bytes in it
             os.write(bytes);
@@ -524,7 +598,7 @@ public class MultiplayerPongApp extends GameApplication {
             os.close();
         }
   
-        catch (Exception e) {
+        catch (IOException e) {
             System.out.println("Exception: " + e);
         }
     }
