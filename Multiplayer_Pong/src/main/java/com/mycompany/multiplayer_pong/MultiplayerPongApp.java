@@ -334,7 +334,6 @@ public class MultiplayerPongApp extends GameApplication {
                                 //Establish the connection to the server.
                                 client.connectAsync();
                             }else {
-                                getDialogService().showMessageBox("Invalid IP!");
                                 getDialogService().showBox("Re-enter IP: ", input, submit);
                             }
                         });
@@ -363,11 +362,8 @@ public class MultiplayerPongApp extends GameApplication {
             socket.close();
             return true;
         } catch (SocketTimeoutException e) {
-            getDialogService().showMessageBox("Connection Timeout!");
             return false;
         } catch (IOException ioException) {
-            ioException.printStackTrace();
-            getDialogService().showMessageBox("Connection Timeout!");
             return false;
         }
     }
@@ -393,6 +389,7 @@ public class MultiplayerPongApp extends GameApplication {
         }
         else{
             System.out.println("Black listed character found in input and does not match IP pattern!!");
+            getDialogService().showMessageBox("Connection Timeout!");
         }
         return normalized;
     }
