@@ -247,10 +247,8 @@ public class MultiplayerPongApp extends GameApplication {
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
                 if (isServer) {
-<<<<<<< HEAD
                     // TODO : prompt keystore if doesn't exist, or if user saves/loads
                     //  CryptoUtility ks = new CryptoUtility(ksPassword); 
-=======
                     getDialogService().showConfirmationBox("Do you want to load old games?", load -> {
                         if(load){
                             while(!validLoad){
@@ -267,7 +265,6 @@ public class MultiplayerPongApp extends GameApplication {
                             System.out.print("new");
                         }
                     });
->>>>>>> 90ce3230b20239847539614aef16809bed394b52
                     //Setup the TCP port that the server will listen at.
                     var server = getNetService().newTCPServer(7778);
                     server.setOnConnected(connection -> {
