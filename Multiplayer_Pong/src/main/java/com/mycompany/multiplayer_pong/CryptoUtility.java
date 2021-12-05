@@ -11,6 +11,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.security.PrivateKey;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import javax.crypto.KeyGenerator;
@@ -63,6 +66,15 @@ public class CryptoUtility {
         } finally {
             fos.close();
         }
+    }
+    
+    public KeyStore getKeyStore() {
+        return this.ks;
+    }
+    
+    public KeyStore.Entry getKeyStoreEntry(String alias) throws NoSuchAlgorithmException,
+                                UnrecoverableEntryException, KeyStoreException {
+        return ks.getEntry(alias, this.passProtection);
     }
     
     /**
@@ -152,14 +164,42 @@ public class CryptoUtility {
      * User should be asked to verify KeyStore password in this operation
      * @param secretKey
      * @param alias 
+     * @return boolean  Returns whether the KeyStore Password is valid.
      */
-    public void storeSecretKeyEntry(SecretKey secretKey, String alias) {
+    public boolean storeSecretKeyEntry(SecretKey secretKey, String alias) {
         KeyStore.SecretKeyEntry secretKeyEntry = new KeyStore.SecretKeyEntry(secretKey);
         try {
+            ks.load(new FileInputStream("src\\main\\resources\\keystore.p12"), this.ksHashedPassword);
             ks.setEntry(alias, secretKeyEntry, passProtection);
             System.out.println("Secret key entry stored in the KeyStore.");
-        } catch (KeyStoreException e) {
+        } catch (KeyStoreException | IOException | NoSuchAlgorithmException 
+                                   | CertificateException e) {
             e.printStackTrace();
+            return false;
         }
+        return true;
     }
+    
+    /**
+     * Stores a secret key entry in the KeyStore
+     * User should be asked to verify KeyStore password in this operation
+     * @param secretKey
+     * @param alias 
+     * @return boolean  Returns whether the KeyStore Password is valid.
+     */
+    public boolean storePrivateKeyEntry(PrivateKey privateKey, String alias, Certificate[] chain) {
+        var privateKeyEntry = new KeyStore.PrivateKeyEntry(privateKey, chain);
+        try {
+            ks.load(new FileInputStream("src\\main\\resources\\keystore.p12"), this.ksHashedPassword);
+            ks.setEntry(alias, privateKeyEntry, passProtection);
+            System.out.println("Secret key entry stored in the KeyStore.");
+        } catch (KeyStoreException | IOException | NoSuchAlgorithmException 
+                                   | CertificateException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+    
+    
 }
