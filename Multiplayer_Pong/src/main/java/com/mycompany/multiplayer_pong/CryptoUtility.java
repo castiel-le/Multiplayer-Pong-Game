@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.PrivateKey;
+import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
@@ -65,6 +66,15 @@ public class CryptoUtility {
         } finally {
             fos.close();
         }
+    }
+    
+    public KeyStore getKeyStore() {
+        return this.ks;
+    }
+    
+    public KeyStore.Entry getKeyStoreEntry(String alias) throws NoSuchAlgorithmException,
+                                UnrecoverableEntryException, KeyStoreException {
+        return ks.getEntry(alias, this.passProtection);
     }
     
     /**
