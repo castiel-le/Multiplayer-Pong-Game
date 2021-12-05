@@ -17,7 +17,7 @@ public class MultiplayerPongMainMenu extends FXGLMenu {
         super(MenuType.MAIN_MENU);
 
         MultiplayerPongMainBtn newGameBtn = new MultiplayerPongMainBtn("New Game", () -> fireNewGame());
-        MultiplayerPongMainBtn loadGameBtn = new MultiplayerPongMainBtn("Load Game", null);
+        MultiplayerPongMainBtn loadGameBtn = new MultiplayerPongMainBtn("Load Game", () -> MultiplayerPongApp.loadSavedGame());
         MultiplayerPongMainBtn quitBtn = new MultiplayerPongMainBtn("Quit", () -> fireExit());
 
         var mainMenu = new VBox(15, newGameBtn, loadGameBtn, quitBtn);

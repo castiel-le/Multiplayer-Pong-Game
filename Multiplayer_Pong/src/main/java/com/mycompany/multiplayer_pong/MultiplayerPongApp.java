@@ -349,5 +349,43 @@ public class MultiplayerPongApp extends GameApplication {
         }
     }
 
+    //in progress
+    @Override
+    protected void onPreInit() {
+        getSaveLoadService().addHandler(new SaveLoadHandler() {
+            @Override
+            public void onSave(DataFile dataFile) {
+                var savedBundle = new Bundle("GameData");
+                int player1score = geti("player1score");
+                int player2score = geti("player2score");
+                savedBundle.put("player1score", player1score);
+                savedBundle.put("player2score", player2score);
+                dataFile.putBundle(savedBundle);
+            }
 
+            @Override
+            public void onLoad(DataFile dataFile) {
+                var savedBundle = dataFile.getBundle("GameData");
+
+                int player1score = savedBundle.get("player1score");
+                int player2score = savedBundle.get("player2score");
+
+                set("player1score", player1score);
+                set("player2score", player2score);
+            }
+        });
+    }
+
+    public static void loadSavedGame(){
+        getDialogService().showInputBox("Enter Saved Game's Name", savedName ->{
+            String savedPath = savedName + ".sav";
+            try {
+                getSaveLoadService().readAndLoadTask(savedPath).run();
+            }
+            catch (Exception exception){
+                getDialogService().showMessageBox("No Save Found!");
+                loadSavedGame();
+            }
+        });
+    }
 }
