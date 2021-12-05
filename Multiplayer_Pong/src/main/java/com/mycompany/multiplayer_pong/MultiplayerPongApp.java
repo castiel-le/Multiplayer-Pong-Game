@@ -141,6 +141,8 @@ public class MultiplayerPongApp extends GameApplication {
 
     private boolean pauseState = false;
 
+    private boolean validLoad = false;
+
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setTitle("Pong");
@@ -276,6 +278,22 @@ public class MultiplayerPongApp extends GameApplication {
                     
                     // TODO : prompt keystore if doesn't exist, or if user saves/loads
                     //  CryptoUtility ks = new CryptoUtility(ksPassword); 
+                    getDialogService().showConfirmationBox("Do you want to load old games?", load -> {
+                        if(load){
+                            while(!validLoad){
+                                try{
+                                    loadSavedGame();
+                                    System.out.println("load");
+                                    validLoad = true;
+                                }
+                                catch (IOException e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        } else{
+                            System.out.print("new");
+                        }
+                    });
                     //Setup the TCP port that the server will listen at.
                     var server = getNetService().newTCPServer(7778);
                     server.setOnConnected(connection -> {
@@ -326,16 +344,20 @@ public class MultiplayerPongApp extends GameApplication {
      * @param ip string that is the ip
      * @return normalized version of the ip address
      */
-    protected String normalizeIP(String ip){
+    protected String normalizeIP(String ip) throws IllegalArgumentException {
         String normalized = Normalizer.normalize(ip, Form.NFKC);
-        Pattern pattern = Pattern.compile("[<>]");
-        Matcher matcher = pattern.matcher(normalized);
+        Pattern pattern1 = Pattern.compile("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}");
+        Matcher matcher1 = pattern1.matcher(normalized);
+        boolean matches1 = matcher1.matches();
         
-        if(matcher.find() && !Pattern.matches("([0-9]{1,3}\\.){1,3}[0-9]{1,3}" , normalized)){
-            System.out.println("Black listed character found in input and does not match IP pattern!!");
+        Pattern pattern2 = Pattern.compile("[L-l][O-o][C-c][A-a][L-l][H-h][O-o][S-s][T-t]");
+        Matcher matcher2 = pattern2.matcher(normalized);
+        boolean matches2 = matcher2.matches();
+        if(matches1 || matches2){
+            System.out.println("Input string is acceptable");
         }
         else{
-            System.out.println("Input string is acceptable");
+            System.out.println("Black listed character found in input and does not match IP pattern!!");
         }
         return normalized;
     }
@@ -541,19 +563,22 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
 
-    public static void loadSavedGame(){
-        getDialogService().showInputBox("Enter Saved Game's Name", savedName ->{
+    public void loadSavedGame() throws IOException {
+        getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
             String savedPath = savedName + ".sav";
-            try {
+            File saveFile = new File(savedName + ".sav");
+            boolean saveExists = false;
+            if (saveFile.exists()) {
+                saveExists = true;
+            }
+            if (saveExists) {
                 getSaveLoadService().readAndLoadTask(savedPath).run();
+            } else {
+                System.out.println("Save file not found");
             }
-            catch (Exception exception){
-                getDialogService().showMessageBox("No Save Found!");
-                loadSavedGame();
-            }
+            System.out.println(savedPath);
         });
     }
-    
     KeyPair generateKeyPairECDSA(String curveName) {
         
         KeyPair keypair = null;
