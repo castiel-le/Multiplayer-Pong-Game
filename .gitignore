@@ -1,5 +1,8 @@
 *.class
 
+# KeyStore Files #
+*.p12
+
 # Package Files #
 *.war
 *.ear
@@ -31,3 +34,4 @@ system/
 
 # Space Invaders #
 *.dat
+/Multiplayer_Pong/nbproject/
