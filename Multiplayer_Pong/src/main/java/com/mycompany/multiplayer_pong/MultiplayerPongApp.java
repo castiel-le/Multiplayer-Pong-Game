@@ -116,6 +116,7 @@ import org.bouncycastle.cert.X509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
     
 import com.mycompany.multiplayer_pong.Crypto;
+import java.security.KeyStore;
 
 /**
  * A simple clone of Pong.
@@ -130,6 +131,8 @@ public class MultiplayerPongApp extends GameApplication {
     
     private Entity player1;
     private Entity player2;
+    
+    private KeyStore ks;
     
     private Entity ball;
     
@@ -242,6 +245,8 @@ public class MultiplayerPongApp extends GameApplication {
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
                 if (isServer) {
+                    // TODO : prompt keystore if doesn't exist, or if user saves/loads
+                    //  CryptoUtility ks = new CryptoUtility(ksPassword); 
                     //Setup the TCP port that the server will listen at.
                     var server = getNetService().newTCPServer(7778);
                     server.setOnConnected(connection -> {
@@ -254,6 +259,7 @@ public class MultiplayerPongApp extends GameApplication {
                     server.startAsync();
                     
                 } else {
+                    // TODO : prompt keystore if doesn't exist, or if user saves/loads
                     getDialogService().showInputBox("Enter Host IP:", x ->{
                         //normalizing x which is the ip input
                         normalizeIP(x);
@@ -398,7 +404,6 @@ public class MultiplayerPongApp extends GameApplication {
         KeyPair keyPair = generateKeyPairECDSA(curveName);
         PrivateKey priv = keyPair.getPrivate();
         String algorithm = "SHA1withECDSA";
-        //String message = "This is the message to be signed.";
         byte[] signature = generateSignature(algorithm, priv, message);
         writeByte(signature);
         Certificate cert = null;
@@ -408,7 +413,7 @@ public class MultiplayerPongApp extends GameApplication {
             e.printStackTrace();
         }
         Certificate[] chain = { cert };
-        storePrivateKeyEntry(priv, "privateKey", chain);
+        //ks.storePrivateKeyEntry(priv, "privateKey", chain);
         
         
         
