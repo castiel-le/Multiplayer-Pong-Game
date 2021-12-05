@@ -39,17 +39,21 @@ import com.almasb.fxgl.entity.SpawnData;
 import com.almasb.fxgl.input.UserAction;
 import com.almasb.fxgl.physics.CollisionHandler;
 import com.almasb.fxgl.physics.HitBox;
+import com.almasb.fxgl.profile.DataFile;
+import com.almasb.fxgl.profile.SaveLoadHandler;
 import com.almasb.fxgl.ui.UI;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 import com.almasb.fxgl.input.Input;
 import com.almasb.fxgl.multiplayer.MultiplayerService;
 import com.almasb.fxgl.net.Connection;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A simple clone of Pong.
@@ -68,6 +72,8 @@ public class MultiplayerPongApp extends GameApplication {
     private Entity ball;
     
     private Input clientInput;
+
+    private boolean pauseState = false;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -117,6 +123,7 @@ public class MultiplayerPongApp extends GameApplication {
                 player1Bat.stop();
             }
         }, KeyCode.S);
+
         
         clientInput = new Input();
         
@@ -145,6 +152,15 @@ public class MultiplayerPongApp extends GameApplication {
         }, KeyCode.S);
     }
 
+    protected void initClientInput(){
+        onKeyDown(KeyCode.ESCAPE, () ->{
+            pauseState = true;
+            var pauseBundle = new Bundle("pauseState");
+            pauseBundle.put("pauseState", pauseState);
+            connection.send(pauseBundle);
+        });
+    }
+
     @Override
     protected void initGameVars(Map<String, Object> vars) {
         vars.put("player1score", 0);
@@ -166,9 +182,8 @@ public class MultiplayerPongApp extends GameApplication {
                 if (isServer) {
                     //Setup the TCP port that the server will listen at.
                     var server = getNetService().newTCPServer(7778);
-                    server.setOnConnected(conn -> {
-                        connection = conn;
-                        
+                    server.setOnConnected(connection -> {
+                        syncPause(connection);
                         //Setup the entities and other necessary items on the server.
                         getExecutor().startAsyncFX(() -> onServer());
                     });
@@ -179,10 +194,9 @@ public class MultiplayerPongApp extends GameApplication {
                 } else {
                     getDialogService().showInputBox("Enter Host IP:", x ->{
                     //Setup the connection to the server.
-                        var client = getNetService().newTCPClient("localhost", 7778);
-                        client.setOnConnected(conn -> {
-                            connection = conn;
-                        
+                        var client = getNetService().newTCPClient(x, 7778);
+                        client.setOnConnected(connection -> {
+                            syncPause(connection);
                             //Enable the client to receive data from the server.
                             getExecutor().startAsyncFX(() -> onClient());
                         });
@@ -205,6 +219,21 @@ public class MultiplayerPongApp extends GameApplication {
             }
         });
 
+    }
+
+    private void syncPause(Connection<Bundle> connection) {
+        this.connection = connection;
+        connection.addMessageHandlerFX((conn, message) -> {
+            if(message.exists("pauseState")){
+                pauseState = message.get("pauseState");
+                if(pauseState){
+                    getExecutor().startAsyncFX(() -> getGameController().pauseEngine());
+                }
+                else{
+                    getExecutor().startAsyncFX(() -> getGameController().resumeEngine());
+                }
+            }
+        });
     }
 
     protected void initServerPhysics() {
@@ -256,14 +285,6 @@ public class MultiplayerPongApp extends GameApplication {
         getGameWorld().addEntity(walls);
     }
 
-//    private void initGameObjects() {
-//        Entity ball = spawn("ball", getAppWidth() / 2 - 5, getAppHeight() / 2 - 5);
-//        Entity bat1 = spawn("bat", new SpawnData(getAppWidth() / 4, getAppHeight() / 2 - 30).put("isPlayer", true));
-//        Entity bat2 = spawn("bat", new SpawnData(3 * getAppWidth() / 4 - 20, getAppHeight() / 2 - 30).put("isPlayer", false));
-//
-//        playerBat = bat1.getComponent(BatComponent.class);
-//    }
-
     private void playHitAnimation(Entity bat) {
         animationBuilder()
                 .autoReverse(true)
@@ -305,9 +326,12 @@ public class MultiplayerPongApp extends GameApplication {
     }
      
      private void onClient(){
-         getService(MultiplayerService.class).addEntityReplicationReceiver(connection, getGameWorld());
-         getService(MultiplayerService.class).addInputReplicationSender(connection, getInput());
-         getService(MultiplayerService.class).addPropertyReplicationReceiver(connection, getWorldProperties());
+
+        initClientInput();
+
+        getService(MultiplayerService.class).addEntityReplicationReceiver(connection, getGameWorld());
+        getService(MultiplayerService.class).addInputReplicationSender(connection, getInput());
+        getService(MultiplayerService.class).addPropertyReplicationReceiver(connection, getWorldProperties());
      }
      
      @Override
@@ -316,5 +340,14 @@ public class MultiplayerPongApp extends GameApplication {
         if (isServer && (clientInput!=null)) {
             clientInput.update(tpf);
         }
+
+        if (!isServer && pauseState){
+            pauseState = false;
+            var pauseBundle = new Bundle("pauseState");
+            pauseBundle.put("pauseState", pauseState);
+            connection.send(pauseBundle);
+        }
     }
+
+
 }
