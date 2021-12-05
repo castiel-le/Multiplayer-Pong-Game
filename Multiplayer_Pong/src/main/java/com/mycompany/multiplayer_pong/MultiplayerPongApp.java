@@ -42,15 +42,23 @@ import com.almasb.fxgl.physics.HitBox;
 import com.almasb.fxgl.profile.DataFile;
 import com.almasb.fxgl.profile.SaveLoadHandler;
 import com.almasb.fxgl.ui.UI;
+import javafx.beans.property.IntegerProperty;
+import javafx.scene.control.Button;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -112,6 +120,8 @@ public class MultiplayerPongApp extends GameApplication {
     private boolean pauseState = false;
 
     private boolean validLoad = false;
+
+    private boolean doneOnce = false;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -223,10 +233,9 @@ public class MultiplayerPongApp extends GameApplication {
                             while(!validLoad){
                                 try{
                                     loadSavedGame();
-                                    System.out.println("load");
                                     validLoad = true;
                                 }
-                                catch (IOException e){
+                                catch (Exception e){
                                     e.printStackTrace();
                                 }
                             }
@@ -246,20 +255,29 @@ public class MultiplayerPongApp extends GameApplication {
                     server.startAsync();
                     
                 } else {
-                    getDialogService().showInputBox("Enter Host IP:", x ->{
+                    javafx.scene.control.TextField input = new javafx.scene.control.TextField();
+                    javafx.scene.control.Button submit = new Button("Enter");
                         //normalizing x which is the ip input
-                        normalizeIP(x);
-                    //Setup the connection to the server.
-                        var client = getNetService().newTCPClient(x, 7778);
-                        client.setOnConnected(connection -> {
-                            syncPause(connection);
-                            //Enable the client to receive data from the server.
-                            getExecutor().startAsyncFX(() -> onClient());
+                        submit.setOnAction(e -> {
+                            normalizeIP(input.getText());
+                            var checkCon = validateConnection(input.getText());
+                            if(checkCon){
+                                //Setup the connection to the server.
+                                var client = getNetService().newTCPClient(input.getText(), 7778);
+                                client.setOnConnected(connection -> {
+                                    syncPause(connection);
+                                    //Enable the client to receive data from the server.
+                                    getExecutor().startAsyncFX(() -> onClient());
+                                });
+
+                                //Establish the connection to the server.
+                                client.connectAsync();
+                            }else {
+                                getDialogService().showMessageBox("Invalid IP!");
+                                getDialogService().showBox("Re-enter IP: ", input, submit);
+                            }
                         });
-                    
-                        //Establish the connection to the server.
-                        client.connectAsync();
-                    });
+                    getDialogService().showBox("Enter IP: ", input, submit);
                 }
             });
         }, Duration.seconds(0.5));
@@ -276,7 +294,24 @@ public class MultiplayerPongApp extends GameApplication {
         });
 
     }
-    /**
+
+    private boolean validateConnection(String x) {
+        Socket socket = new Socket();
+        try {
+            socket.connect(new InetSocketAddress(x, 7778), 2000);
+            socket.close();
+            return true;
+        } catch (SocketTimeoutException e) {
+            getDialogService().showMessageBox("Connection Timeout!");
+            return false;
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
+            getDialogService().showMessageBox("Connection Timeout!");
+            return false;
+        }
+    }
+
+        /**
      * method that checks and normalizes the user input of the ip address
      * then proceeds to check for illegal patterns and if it matches the ip address pattern.
      * It normalizes it to NFKC form.
@@ -395,24 +430,27 @@ public class MultiplayerPongApp extends GameApplication {
     }
     
     private void onServer() {
-        
-        initScreenBounds();
-        initServerInput();
-        initServerPhysics();
-        
-        //Spawn the player for the server
-        ball = spawn("ball", new SpawnData(getAppWidth() / 2 - 5, getAppHeight() / 2 - 5).put("isServer", true));
-        getService(MultiplayerService.class).spawn(connection, ball, "ball");
-        player1 = spawn("bat", new SpawnData(getAppWidth() / 4, getAppHeight() / 2 - 30).put("isServer", true));
-        getService(MultiplayerService.class).spawn(connection, player1, "bat");
-        player2 = spawn("bat", new SpawnData(3 * getAppWidth() / 4 - 20, getAppHeight() / 2 - 30).put("isServer", true));
-        getService(MultiplayerService.class).spawn(connection, player2, "bat");
-        
-        getService(MultiplayerService.class).addPropertyReplicationSender(connection, getWorldProperties());
-        getService(MultiplayerService.class).addInputReplicationReceiver(connection, clientInput);
-        
-        player1Bat = player1.getComponent(BatComponent.class);
-        player2Bat = player2.getComponent(BatComponent.class);
+
+        if(!doneOnce) {
+            initScreenBounds();
+            initServerInput();
+            initServerPhysics();
+            //Spawn the player for the server
+            ball = spawn("ball", new SpawnData(getAppWidth() / 2 - 5, getAppHeight() / 2 - 5).put("isServer", true));
+            getService(MultiplayerService.class).spawn(connection, ball, "ball");
+            player1 = spawn("bat", new SpawnData(getAppWidth() / 4, getAppHeight() / 2 - 30).put("isServer", true));
+            getService(MultiplayerService.class).spawn(connection, player1, "bat");
+            player2 = spawn("bat", new SpawnData(3 * getAppWidth() / 4 - 20, getAppHeight() / 2 - 30).put("isServer", true));
+            getService(MultiplayerService.class).spawn(connection, player2, "bat");
+
+            getService(MultiplayerService.class).addPropertyReplicationSender(connection, getWorldProperties());
+            getService(MultiplayerService.class).addInputReplicationReceiver(connection, clientInput);
+
+            player1Bat = player1.getComponent(BatComponent.class);
+            player2Bat = player2.getComponent(BatComponent.class);
+
+            doneOnce = true;
+        }
     }
      
      private void onClient(){
@@ -446,10 +484,10 @@ public class MultiplayerPongApp extends GameApplication {
             @Override
             public void onSave(DataFile dataFile) {
                 var savedBundle = new Bundle("GameData");
-                int player1score = geti("player1score");
-                int player2score = geti("player2score");
-                savedBundle.put("player1score", player1score);
-                savedBundle.put("player2score", player2score);
+                IntegerProperty player1score = getip("player1score");
+                IntegerProperty player2score = getip("player2score");
+                savedBundle.put("player1score", player1score.get());
+                savedBundle.put("player2score", player2score.get());
                 dataFile.putBundle(savedBundle);
             }
 
@@ -466,7 +504,7 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
 
-    public void loadSavedGame() throws IOException{
+    public void loadSavedGame(){
         getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
             String savedPath = savedName + ".sav";
 
@@ -541,14 +579,5 @@ public class MultiplayerPongApp extends GameApplication {
             System.out.println("Exception: " + e);
         }
     }
-    
-    
-    
-    
-    
 
-
-    
-    
-    
 }
