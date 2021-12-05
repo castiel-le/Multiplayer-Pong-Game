@@ -49,6 +49,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import org.apache.commons.io.FileUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
@@ -115,7 +116,7 @@ import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
     
-import com.mycompany.multiplayer_pong.Crypto;
+import com.mycompany.multiplayer_pong.CryptoUtility;
 import java.security.KeyStore;
 
 /**
@@ -234,6 +235,9 @@ public class MultiplayerPongApp extends GameApplication {
 
     @Override
     protected void initGame() {
+        
+        
+        
         runOnce(() -> {
             getDialogService().showConfirmationBox("Are you the host?", yes -> {
                 isServer = yes;
@@ -245,6 +249,31 @@ public class MultiplayerPongApp extends GameApplication {
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
                 if (isServer) {
+                    
+                    File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
+                    if(keyStoreFile.exists() && !keyStoreFile.isDirectory()){
+                       
+                    }
+
+                    else{
+
+                        KeyPair keyPair = generateKeyPairECDSA("secp256r1");
+                        PrivateKey priv = keyPair.getPrivate();
+                    }
+                    
+                    File signatureFile = new File("src\\main\\resources\\PongApp.sig");
+                    if(signatureFile.exists() && !signatureFile.isDirectory()){
+                        byte[] fileSignature = getByteArrayFromFile("src\\main\\resources\\PongApp.sig");
+                    }
+                    
+                    else{
+                        byte[] fileSignature = new byte[0];
+                    }
+                    
+                    
+                             
+
+                    
                     // TODO : prompt keystore if doesn't exist, or if user saves/loads
                     //  CryptoUtility ks = new CryptoUtility(ksPassword); 
                     //Setup the TCP port that the server will listen at.
@@ -259,7 +288,7 @@ public class MultiplayerPongApp extends GameApplication {
                     server.startAsync();
                     
                 } else {
-                    // TODO : prompt keystore if doesn't exist, or if user saves/loads
+                    
                     getDialogService().showInputBox("Enter Host IP:", x ->{
                         //normalizing x which is the ip input
                         normalizeIP(x);
@@ -401,6 +430,17 @@ public class MultiplayerPongApp extends GameApplication {
             read.close();
         }
         String curveName = "secp256r1";
+        File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
+        if(keyStoreFile.exists() && !keyStoreFile.isDirectory()){
+                       
+        }
+        
+        else{
+            
+            KeyPair keyPair = generateKeyPairECDSA(curveName);
+            PrivateKey priv = keyPair.getPrivate();
+        }
+        
         KeyPair keyPair = generateKeyPairECDSA(curveName);
         PrivateKey priv = keyPair.getPrivate();
         String algorithm = "SHA1withECDSA";
@@ -422,10 +462,14 @@ public class MultiplayerPongApp extends GameApplication {
 
     public static void main(String[] args) {
         
+        
         launch(args);
     }
     
     private void onServer() {
+        
+        
+        
         
         initScreenBounds();
         initServerInput();
@@ -608,13 +652,56 @@ public class MultiplayerPongApp extends GameApplication {
         }
     }
     
+    static byte[] getByteArrayFromFile(String filePath){
+         byte[] byteArray = new byte[0];
+        try { 
+            byteArray = FileUtils.readFileToByteArray(new File(filePath));
+            return  byteArray;
+            
+        }
+        catch(IOException e){
+            System.out.println(e.getMessage());
+        }
+        
+        return  byteArray;
+        
+    }
     
-    
-    
-    
+    boolean verifySignature(byte[] signature, PublicKey publickey, String algorithm, String message) 
+            throws NoSuchAlgorithmException, NoSuchProviderException, 
+            InvalidKeyException, UnsupportedEncodingException, SignatureException {
+        
+        //Create an instance of the signature scheme for the given signature algorithm
+        Signature sig = Signature.getInstance(algorithm, "SunEC");
+        
+        //Initialize the signature verification scheme.
+        sig.initVerify(publickey);
+        
+        //Compute the signature.
+        sig.update(message.getBytes("UTF-8"));
+        
+        //Verify the signature.
+        boolean validSignature = sig.verify(signature);
+        
+        if(validSignature) {
+            System.out.println("\nSignature is valid");
+        } else {
+            System.out.println("\nSignature is NOT valid!!!");
+        }
+        
+        return validSignature;
+    }
+}
 
-
-    
-    
     
 }
+    
+    
+    
+    
+    
+
+
+    
+    
+    

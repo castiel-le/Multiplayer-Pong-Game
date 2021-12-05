@@ -12,7 +12,7 @@
             <properties>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.workingdir>C:\Users\Alex\Documents\NetBeansProjects\datacom_project_2_fxgl\Multiplayer_Pong</exec.workingdir>
+                <exec.workingdir>C:\Users\edris\datacom_project_2_fxgl\Multiplayer_Pong</exec.workingdir>
                 <exec.vmArgs></exec.vmArgs>
                 <exec.appArgs></exec.appArgs>
                 <exec.mainClass>com.mycompany.multiplayer_pong.MultiplayerPongApp</exec.mainClass>
@@ -31,7 +31,7 @@
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
-                <exec.workingdir>C:\Users\Alex\Documents\NetBeansProjects\datacom_project_2_fxgl\Multiplayer_Pong</exec.workingdir>
+                <exec.workingdir>C:\Users\edris\datacom_project_2_fxgl\Multiplayer_Pong</exec.workingdir>
                 <exec.vmArgs>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address}</exec.vmArgs>
                 <exec.appArgs></exec.appArgs>
                 <exec.mainClass>com.mycompany.multiplayer_pong.MultiplayerPongApp</exec.mainClass>
@@ -49,7 +49,7 @@
             <properties>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.workingdir>C:\Users\Alex\Documents\NetBeansProjects\datacom_project_2_fxgl\Multiplayer_Pong</exec.workingdir>
+                <exec.workingdir>C:\Users\edris\datacom_project_2_fxgl\Multiplayer_Pong</exec.workingdir>
                 <exec.vmArgs></exec.vmArgs>
                 <exec.appArgs></exec.appArgs>
                 <exec.mainClass>com.mycompany.multiplayer_pong.MultiplayerPongApp</exec.mainClass>
