@@ -540,7 +540,7 @@ public class MultiplayerPongApp extends GameApplication {
     private void showGameOver(String winner) {
         File f = new File("DBDriverInfo.properties");
         System.out.println(f.getAbsolutePath());
-        File pongAppJava = new File(".\\src\\main\\java\\com\\mycompany\\multiplayer_pong\\MultiplayerPongApp.java");
+        File pongAppJava = new File("src\\main\\java\\com\\mycompany\\multiplayer_pong\\MultiplayerPongApp.java");
         String message = "";
         String temp = "";
         try {
@@ -682,6 +682,15 @@ public class MultiplayerPongApp extends GameApplication {
             System.out.println(savedPath);
         });
     }
+
+    public static void saveGame(){
+        getDialogService().showInputBox("Enter Save Name:", savedName -> {
+            String savedPath = savedName + ".sav";
+            File saveFile = new File(savedPath);
+            getSaveLoadService().saveAndWriteTask(savedPath).run();
+        });
+    }
+
     KeyPair generateKeyPairECDSA(String curveName) {
         
         KeyPair keypair = null;
