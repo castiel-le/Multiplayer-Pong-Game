@@ -58,10 +58,10 @@ public class CryptoUtility {
             this.ksHashedPassword = computeHash(password.toString());
             ks = KeyStore.getInstance(KeyStore.getDefaultType());
             ks.load(null, computeHash(this.ksHashedPassword.toString()));
-            
+            passProtection = new KeyStore.PasswordProtection(computeHash(password.toString()));
             // Store keystore
             FileOutputStream fos = new FileOutputStream("keystore.p12");
-            ks.store(fos, password);
+            //ks.store(fos, password);
             System.out.println("KeyStore stored");
         } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
