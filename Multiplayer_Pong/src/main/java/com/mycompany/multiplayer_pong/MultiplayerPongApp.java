@@ -126,9 +126,13 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
     
 import com.mycompany.multiplayer_pong.CryptoUtility;
 import java.io.BufferedReader;
+import java.io.FileFilter;
 import java.io.FileReader;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.UnrecoverableEntryException;
 import javafx.scene.control.PasswordField;
+import javax.crypto.SecretKey;
 
 /**
  * A simple clone of Pong.
@@ -138,7 +142,7 @@ import javafx.scene.control.PasswordField;
  */
 public class MultiplayerPongApp extends GameApplication {
     private boolean isServer = false;
-    
+    private boolean didKeyStoreNotExist;
     private Connection<Bundle> connection;
     
     private Entity player1;
@@ -266,14 +270,23 @@ public class MultiplayerPongApp extends GameApplication {
                 if (isServer) {
                     javafx.scene.control.PasswordField passwordField = new PasswordField();
                     var submitPassword = new javafx.scene.control.Button();
+                    submitPassword.setText("Submit");
+                    didKeyStoreNotExist = true;
                     String prompt = "Enter your new KeyStore password";
                     if (new File("src\\main\\resources\\keystore.p12").exists()) {
                         prompt = "Enter your KeyStore password";
+                        didKeyStoreNotExist = false;
                     }
                     getDialogService().showBox(prompt, passwordField, submitPassword);
                     String normalizedPassword = normalizeString(submitPassword.getText());
                     try {
                         keyStore = new CryptoUtility(normalizedPassword.toCharArray());
+                        SecretKey key = null;
+                        if (didKeyStoreNotExist) {
+                            key = keyStore.generateSecretKey(256);
+                            keyStore.storeSecretKeyEntry(key, "secretKey");
+                            keyStore.storeKeyStore();
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -318,7 +331,33 @@ public class MultiplayerPongApp extends GameApplication {
                             System.out.print("new");
                         }
                     });
+                    File dir = new File(System.getProperty("user.dir"));
+                    FileFilter filter = new FileFilter() {
+                        @Override
+                        public boolean accept(File pathname) {
+                            if (pathname.getName().endsWith((".enc"))) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    };
+                    File[] dirList = dir.listFiles(filter);
+                    for (int i = 0; i < dirList.length; i++) {
+                        //Generate GCM IV.
+                        byte[] iv = keyStore.generateGCMIV();
+                        String algorithm = "AES/GCM/NoPadding";
+                        try {
+                            
+                            this.keyStore.decryptFile(algorithm, (SecretKey) this.keyStore.getKeyStoreEntry("secretKey"), iv, dirList[i], new File(dirList[i].getName()));
+                        } catch (NoSuchAlgorithmException | BadPaddingException | NoSuchPaddingException
+                                | InvalidKeyException | InvalidAlgorithmParameterException 
+                                | IllegalBlockSizeException | IOException 
+                                | UnrecoverableEntryException | KeyStoreException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     //Setup the TCP port that the server will listen at.
+                                                            // Port 7777 did not work on some machines
                     var server = getNetService().newTCPServer(7778);
                     server.setOnConnected(connection -> {
                         syncPause(connection);
@@ -370,10 +409,20 @@ public class MultiplayerPongApp extends GameApplication {
 
     }
     
+    /**
+     * Method for normalizing an ordinary string
+     * @param s
+     * @return 
+     */
     private String normalizeString(String s) {
         return Normalizer.normalize(s, Form.NFKC);
     }
 
+    /**
+     * Method for validating connection.
+     * @param x
+     * @return 
+     */
     private boolean validateConnection(String x) {
         Socket socket = new Socket();
         try {
@@ -504,18 +553,21 @@ public class MultiplayerPongApp extends GameApplication {
         }
         String curveName = "secp256r1";
         File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
-        if(keyStoreFile.exists() && !keyStoreFile.isDirectory()){
-
+        KeyPair keyPair = null;
+        PrivateKey priv = null;
+        if(didKeyStoreNotExist){
+            keyPair = generateKeyPairECDSA(curveName);
+            priv = keyPair.getPrivate();
         }
-
-        else{
-
-            KeyPair keyPair = generateKeyPairECDSA(curveName);
-            PrivateKey priv = keyPair.getPrivate();
+        else {
+            try {
+                priv = (PrivateKey) this.keyStore.getKeyStoreEntry("privateKey");
+            } catch (NoSuchAlgorithmException | UnrecoverableEntryException
+                    | KeyStoreException e) {
+                e.printStackTrace();
+            }
         }
-
-        KeyPair keyPair = generateKeyPairECDSA(curveName);
-        PrivateKey priv = keyPair.getPrivate();
+        
         String algorithm = "SHA1withECDSA";
         byte[] signature = generateSignature(algorithm, priv, message);
         writeByte(signature);

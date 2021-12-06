@@ -11,14 +11,25 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.UnrecoverableEntryException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Base64;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -28,6 +39,8 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class CryptoUtility {
 
+    public static final int GCM_IV_LENGTH = 12;
+    public static final int GCM_TAG_LENGTH = 16;
     private KeyStore ks;
     private KeyStore.PasswordProtection passProtection;
     private char[] ksHashedPassword;
@@ -87,10 +100,27 @@ public class CryptoUtility {
     }
     
     /**
+     * 
+     * @param alias "selfSignedCert"
+     * @return 
+     */
+    public PublicKey getPublicKey(String alias) {
+        PublicKey returnedKey = null;
+        try {
+            PrivateKey key = (PrivateKey) ks.getKey(alias, ksHashedPassword);
+            Certificate cert = ks.getCertificate(alias);
+            returnedKey = cert.getPublicKey();
+        } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+            e.printStackTrace();
+        }
+        return returnedKey;
+    }
+    
+    /**
      * SHA3-256 String hashing.
      *
      * @param message
-     * @return
+     * @return  char[] of hash
      */
     public char[] computeHash(String message) {
         char[] hash = null;
@@ -133,24 +163,6 @@ public class CryptoUtility {
     }
     
     /**
-     * Stores KeyStore object in "src\main\resources\keystore.p12"
-     * @throws IOException 
-     */
-    /*public void storeKeyStore() throws IOException {
-        if (new File("src\\main\\resources\\keystore.p12").exists()) {
-            try {
-                FileOutputStream fsOutput = new FileOutputStream("src\\main\\resources\\keystore.p12");
-
-                ks.store(fsOutput, ksHashedPassword);
-                System.out.println("Key stored");
-            } catch (KeyStoreException | FileNotFoundException | NoSuchAlgorithmException
-                                       | CertificateException e) {
-                e.printStackTrace();
-            }
-        }
-    }*/
-    
-    /**
      * Stores a secret key entry in the KeyStore
      * User should be asked to verify KeyStore password in this operation
      * @param secretKey
@@ -173,7 +185,7 @@ public class CryptoUtility {
     
     /**
      * Stores a secret key entry in the KeyStore
-     * User should be asked to verify KeyStore password in this operation
+     * User should have been asked to verify KeyStore password in this operation
      * @param secretKey
      * @param alias 
      * @return boolean  Returns whether the KeyStore Password is valid.
@@ -190,7 +202,143 @@ public class CryptoUtility {
             return false;
         }
         return true;
+    }    
+
+    /**
+     * Method for generating 12 byte GCM Initialization Vector. 
+     * @return 
+     */
+    byte[] generateGCMIV() {
+        byte[] GCMIV = new byte[GCM_IV_LENGTH];
+        SecureRandom random = new SecureRandom();
+        random.nextBytes(GCMIV);
+        return GCMIV;
     }
     
+    /**
+     * /**
+     * Method to encrypt a file.
+     * @param algorithm Encryption algorithm type
+     * @param key       Secret key
+     * @param IV        Vector
+     * @param inputFile
+     * @param outputFile
+     * @throws NoSuchAlgorithmException
+     * @throws BadPaddingException
+     * @throws NoSuchPaddingException
+     * @throws InvalidKeyException
+     * @throws InvalidAlgorithmParameterException
+     * @throws IllegalBlockSizeException
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    void encryptFile(String algorithm, SecretKey key, byte[] IV, File inputFile, File outputFile)
+            throws NoSuchAlgorithmException, BadPaddingException,
+            NoSuchPaddingException, InvalidKeyException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException,
+            FileNotFoundException, IOException {
+
+        //Create an instance of the Cipher class
+        Cipher cipher = Cipher.getInstance(algorithm);
+
+        // Create GCMParameterSpec
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, IV);
+
+        cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
+
+        FileOutputStream outputStream;
+        //Create output stream
+        try (
+                FileInputStream inputStream = new FileInputStream(inputFile)) {
+            //Create output stream
+            outputStream = new FileOutputStream(outputFile);
+            byte[] buffer = new byte[64];
+            int bytesRead;
+            //Read up to 64 bytes of data at a time
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                //Cipher.update method takes byte array, input offset and input lentth
+                byte[] output = cipher.update(buffer, 0, bytesRead);
+                if (output != null) {
+                    //Write the ciphertext for the buffer to the output file
+                    outputStream.write(output);
+                }
+            }   //Encrypt the last buffer of plaintext 
+            byte[] output = cipher.doFinal();
+            if (output != null) {
+                outputStream.write(output);
+            }
+            //Close the input and output streams
+        }
+        outputStream.close();
+    }
+
     
+    /**
+     * Method to decrypt a file.
+     * @param algorithm Encryption algorithm type
+     * @param key       Secret key
+     * @param IV        Vector
+     * @param inputFile
+     * @param outputFile
+     * @throws NoSuchAlgorithmException
+     * @throws BadPaddingException
+     * @throws NoSuchPaddingException
+     * @throws InvalidKeyException
+     * @throws InvalidAlgorithmParameterException
+     * @throws IllegalBlockSizeException
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    void decryptFile(String algorithm, SecretKey key,
+            byte[] IV, File inputFile,
+            File outputFile)
+            throws NoSuchAlgorithmException, BadPaddingException,
+            NoSuchPaddingException, InvalidKeyException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException,
+            FileNotFoundException, IOException {
+
+        //Create an instance of the Cipher class
+        Cipher cipher = Cipher.getInstance(algorithm);
+
+        // Create GCMParameterSpec
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, IV);
+
+        cipher.init(Cipher.DECRYPT_MODE, key, gcmParameterSpec);
+
+        FileOutputStream outputStream;
+        //Create output stream
+        try (
+                FileInputStream inputStream = new FileInputStream(inputFile)) {
+            //Create output stream
+            outputStream = new FileOutputStream(outputFile);
+            byte[] buffer = new byte[64];
+            int bytesRead;
+            //Read up to 64 bytes of data at a time
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                byte[] output = cipher.update(buffer, 0, bytesRead);
+                if (output != null) {
+                    //Write the Plaintext to the output file
+                    outputStream.write(output);
+                }
+            }   //Decrypt the last buffer of ciphertext
+            byte[] output = cipher.doFinal();
+            if (output != null) {
+                outputStream.write(output);
+            }
+            //Close the input and output streams.
+        }
+        outputStream.close();
+    }
+    
+    /**
+     * Method to store the KeyStore using an instance of this class
+     * @throws IOException 
+     */
+    public void storeKeyStore() throws IOException {
+        try {
+            this.ks.store(new FileOutputStream(".\\src\\main\\resources\\keystore.p12"), ksHashedPassword);
+        } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException e) {
+            e.printStackTrace();
+        }
+    }
 }
