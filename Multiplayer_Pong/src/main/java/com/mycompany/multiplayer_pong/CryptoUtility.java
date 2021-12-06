@@ -56,7 +56,7 @@ public class CryptoUtility {
         try {
             // Create keystore
             this.ksHashedPassword = computeHash(password.toString());
-            ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            ks = KeyStore.getInstance("PKCS12");
             ks.load(null, computeHash(this.ksHashedPassword.toString()));
             passProtection = new KeyStore.PasswordProtection(computeHash(password.toString()));
             // Store keystore
