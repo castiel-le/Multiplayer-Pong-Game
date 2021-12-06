@@ -504,6 +504,11 @@ public class MultiplayerPongApp extends GameApplication {
                 .buildAndPlay();
     }
 
+    
+    /**
+     * Method that runs once there is a winner
+     * @param winner 
+     */
     private void showGameOver(String winner) {
         File f = new File("DBDriverInfo.properties");
         System.out.println(f.getAbsolutePath());
@@ -511,10 +516,14 @@ public class MultiplayerPongApp extends GameApplication {
         String message = "";
         String temp = "";
         try {
-            BufferedReader br = new BufferedReader(new FileReader(pongAppJava));
+            FileReader fr = new FileReader(pongAppJava);
+            BufferedReader br = new BufferedReader(fr);
+            StringBuffer sb = new StringBuffer();
             while ((temp = br.readLine()) != null) {
-                message += temp;
+                sb.append(temp);
+                sb.append("\n");
             }
+            message = sb.toString();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -633,6 +642,9 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
 
+    /**
+     * Method for loading the game
+     */
     public void loadSavedGame(){
         getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
             String savedPath = savedName + ".sav";
@@ -658,6 +670,9 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
 
+    /**
+     * Method for saving the game
+     */
     public static void saveGame(){
         getDialogService().showInputBox("Enter Save Name:", savedName -> {
             String savedPath = savedName + ".sav";
@@ -679,7 +694,11 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
     
-
+    /**
+     * Generates a key pair using ECDSA
+     * @param curveName
+     * @return 
+     */
     KeyPair generateKeyPairECDSA(String curveName) {
         
         KeyPair keypair = null;
@@ -701,6 +720,17 @@ public class MultiplayerPongApp extends GameApplication {
         return keypair;
     }
     
+    /**
+     * Generates a certificate that wraps the private and public key pair
+     * @param keyPair
+     * @param algo
+     * @param name
+     * @param days
+     * @return
+     * @throws OperatorCreationException
+     * @throws CertIOException
+     * @throws CertificateException 
+     */
     private static X509Certificate genCertificate(KeyPair keyPair, String algo, String name, int days) throws OperatorCreationException,
             CertIOException, CertificateException {
         Instant now = Instant.now();
@@ -716,6 +746,13 @@ public class MultiplayerPongApp extends GameApplication {
         return new JcaX509CertificateConverter().getCertificate(certBuilder.build(contentSigner));
     }
     
+    /**
+     * Hashes public key, then returns a SubjectKeyIdentifier
+     * @param publicKey
+     * @return
+     * @throws OperatorCreationException
+     * @throws CertIOException 
+     */
     private static SubjectKeyIdentifier hashPublicKey(PublicKey publicKey) throws OperatorCreationException, 
             CertIOException {
         SubjectPublicKeyInfo info = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
@@ -725,13 +762,25 @@ public class MultiplayerPongApp extends GameApplication {
         return new X509ExtensionUtils(digest).createSubjectKeyIdentifier(info);
     }
     
+    /**
+     * Hashes an authority public key, returns AuthorityPublicKey
+     * @param publicKey
+     * @return
+     * @throws OperatorCreationException 
+     */
     private static AuthorityKeyIdentifier hashAuthorityPublicKey(PublicKey publicKey) throws OperatorCreationException {
         SubjectPublicKeyInfo info = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
         DigestCalculator digest = new BcDigestCalculatorProvider().get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
         return new X509ExtensionUtils(digest).createAuthorityKeyIdentifier(info);
     }
     
-    
+    /**
+     * Generates the signature of a message using a private key and the specified algorithm
+     * @param algorithm
+     * @param privatekey
+     * @param message
+     * @return 
+     */
     byte[] generateSignature (String algorithm, PrivateKey privatekey, String message){
         
         byte[] signature = null;
@@ -753,7 +802,10 @@ public class MultiplayerPongApp extends GameApplication {
         return signature;
     }
     
-    
+    /**
+     * Signs file
+     * @param bytes 
+     */
     static void writeByte(byte[] bytes)
     {
         try {

@@ -75,6 +75,14 @@ public class CryptoUtility {
         return this.ks;
     }
     
+    /**
+     * Gets a keyStore entry depending on given alias
+     * @param alias
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws UnrecoverableEntryException
+     * @throws KeyStoreException 
+     */
     public KeyStore.Entry getKeyStoreEntry(String alias) throws NoSuchAlgorithmException,
                                 UnrecoverableEntryException, KeyStoreException {
         return ks.getEntry(alias, this.passProtection);
