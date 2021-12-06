@@ -128,6 +128,8 @@ import com.mycompany.multiplayer_pong.CryptoUtility;
 import java.io.BufferedReader;
 import java.io.FileFilter;
 import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.UnrecoverableEntryException;
@@ -505,7 +507,7 @@ public class MultiplayerPongApp extends GameApplication {
     private void showGameOver(String winner) {
         File f = new File("DBDriverInfo.properties");
         System.out.println(f.getAbsolutePath());
-        File pongAppJava = new File("src\\main\\java\\com\\mycompany\\multiplayer_pong\\MultiplayerPongApp.java");
+        File pongAppJava = new File("src/main/java/com/mycompany/multiplayer_pong/MultiplayerPongApp.java");
         String message = "";
         String temp = "";
         try {
@@ -517,7 +519,7 @@ public class MultiplayerPongApp extends GameApplication {
             e.printStackTrace();
         }
         String curveName = "secp256r1";
-        File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
+        File keyStoreFile = new File("src/main/resources/keystore.p12");
         KeyPair keyPair = null;
         PrivateKey priv = null;
         if(didKeyStoreNotExist && isServer){
@@ -754,7 +756,12 @@ public class MultiplayerPongApp extends GameApplication {
     
     static void writeByte(byte[] bytes)
     {
-        //if (!isServer) {
+        try {
+        Files.write(Paths.get("src/main/resources/PongApp.sig"), bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        /*//if (!isServer) {
             try {
 
                 // Initialize a pointer
@@ -775,7 +782,7 @@ public class MultiplayerPongApp extends GameApplication {
             catch (IOException e) {
                 System.out.println("Exception: " + e);
             }
-        //}
+        //}*/
     }
     static byte[] getByteArrayFromFile(String filePath){
          byte[] byteArray = new byte[0];
