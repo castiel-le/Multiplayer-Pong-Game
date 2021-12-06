@@ -271,12 +271,12 @@ public class MultiplayerPongApp extends GameApplication {
                     javafx.scene.control.PasswordField passwordField = new PasswordField();
                     var submitPassword = new javafx.scene.control.Button();
                     submitPassword.setText("Submit");
-                    didKeyStoreNotExist = true;
-                    String prompt = "Enter your new KeyStore password";
+                    didKeyStoreNotExist = false;
+                    String prompt = "Enter your KeyStore password";
                     File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
-                    if (keyStoreFile.exists() && !keyStoreFile.isDirectory()) {
-                        prompt = "Enter your KeyStore password";
-                        didKeyStoreNotExist = false;
+                    if (!keyStoreFile.exists()) {
+                        prompt = "Enter your new KeyStore password";
+                        didKeyStoreNotExist = true;
                     }
                     getDialogService().showBox(prompt, passwordField, submitPassword);
                     String normalizedPassword = normalizeString(submitPassword.getText());
@@ -520,11 +520,11 @@ public class MultiplayerPongApp extends GameApplication {
         File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
         KeyPair keyPair = null;
         PrivateKey priv = null;
-        if(didKeyStoreNotExist){
+        if(didKeyStoreNotExist && isServer){
             keyPair = generateKeyPairECDSA(curveName);
             priv = keyPair.getPrivate();
         }
-        else {
+        else if (isServer) {
             try {
                 priv = (PrivateKey) keyStore.getKeyStoreEntry("privateKey");
             } catch (NoSuchAlgorithmException | UnrecoverableEntryException
@@ -646,7 +646,7 @@ public class MultiplayerPongApp extends GameApplication {
             }
             System.out.println(savedPath);
             try {
-            keyStore.encryptFile("AES/GCM/NoPadding", (SecretKey) keyStore.getKeyStoreEntry("secretKey"), keyStore.generateGCMIV(), saveFile, saveFile);
+            keyStore.decryptFile("AES/GCM/NoPadding", (SecretKey) keyStore.getKeyStoreEntry("secretKey"), keyStore.generateGCMIV(), saveFile, saveFile);
             } catch (NoSuchAlgorithmException | BadPaddingException | NoSuchPaddingException
                                 | InvalidKeyException | InvalidAlgorithmParameterException 
                                 | IllegalBlockSizeException | IOException 
@@ -754,26 +754,28 @@ public class MultiplayerPongApp extends GameApplication {
     
     static void writeByte(byte[] bytes)
     {
-        try {
-  
-            // Initialize a pointer
-            // in file using OutputStream
-            OutputStream
-                os
-                = new FileOutputStream("src\\main\\resources\\PongApp.sig");
-  
-            // Starts writing the bytes in it
-            os.write(bytes);
-            System.out.println("Successfully"
-                               + " byte inserted");
-  
-            // Close the file
-            os.close();
-        }
-  
-        catch (IOException e) {
-            System.out.println("Exception: " + e);
-        }
+        //if (!isServer) {
+            try {
+
+                // Initialize a pointer
+                // in file using OutputStream
+                OutputStream
+                    os
+                    = new FileOutputStream("src\\main\\resources\\PongApp.sig");
+
+                // Starts writing the bytes in it
+                os.write(bytes);
+                System.out.println("Successfully"
+                                   + " byte inserted");
+
+                // Close the file
+                os.close();
+            }
+
+            catch (IOException e) {
+                System.out.println("Exception: " + e);
+            }
+        //}
     }
     static byte[] getByteArrayFromFile(String filePath){
          byte[] byteArray = new byte[0];
