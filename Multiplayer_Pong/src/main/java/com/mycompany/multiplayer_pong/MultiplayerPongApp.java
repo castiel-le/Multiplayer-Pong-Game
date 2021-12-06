@@ -265,7 +265,7 @@ public class MultiplayerPongApp extends GameApplication {
 
                 if (isServer) {
                     javafx.scene.control.PasswordField passwordField = new PasswordField();
-                    var submitPassword = new javafx.scene.control.Button();
+                    var submitPassword = new javafx.scene.control.Button("Enter");
                     String prompt = "Enter your new KeyStore password";
                     if (new File("src\\main\\resources\\keystore.p12").exists()) {
                         prompt = "Enter your KeyStore password";
