@@ -125,7 +125,10 @@ import org.bouncycastle.cert.X509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
     
 import com.mycompany.multiplayer_pong.CryptoUtility;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.security.KeyStore;
+import javafx.scene.control.PasswordField;
 
 /**
  * A simple clone of Pong.
@@ -141,7 +144,7 @@ public class MultiplayerPongApp extends GameApplication {
     private Entity player1;
     private Entity player2;
     
-    private KeyStore ks;
+    private CryptoUtility keyStore;
     
     private Entity ball;
     
@@ -261,17 +264,29 @@ public class MultiplayerPongApp extends GameApplication {
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
                 if (isServer) {
-                    
-                    File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
+                    javafx.scene.control.PasswordField passwordField = new PasswordField();
+                    var submitPassword = new javafx.scene.control.Button();
+                    String prompt = "Enter your new KeyStore password";
+                    if (new File("src\\main\\resources\\keystore.p12").exists()) {
+                        prompt = "Enter your KeyStore password";
+                    }
+                    getDialogService().showBox(prompt, passwordField, submitPassword);
+                    String normalizedPassword = normalizeString(submitPassword.getText());
+                    try {
+                        keyStore = new CryptoUtility(normalizedPassword.toCharArray());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    /*File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
                     if(keyStoreFile.exists() && !keyStoreFile.isDirectory()){
-                       
+                        
                     }
 
                     else{
 
                         KeyPair keyPair = generateKeyPairECDSA("secp256r1");
                         PrivateKey priv = keyPair.getPrivate();
-                    }
+                    }*/
                     
                     File signatureFile = new File("src\\main\\resources\\PongApp.sig");
                     if(signatureFile.exists() && !signatureFile.isDirectory()){
@@ -353,6 +368,10 @@ public class MultiplayerPongApp extends GameApplication {
             }
         });
 
+    }
+    
+    private String normalizeString(String s) {
+        return Normalizer.normalize(s, Form.NFKC);
     }
 
     private boolean validateConnection(String x) {
@@ -470,18 +489,18 @@ public class MultiplayerPongApp extends GameApplication {
     }
 
     private void showGameOver(String winner) {
-        
-        File pongAppJava = new File("src\\main\\java\\com\\mycompany\\multiplayer_pong\\MultiplayerPongApp.java");
-        Scanner read = null;
+        File f = new File("DBDriverInfo.properties");
+        System.out.println(f.getAbsolutePath());
+        File pongAppJava = new File(".\\src\\main\\java\\com\\mycompany\\multiplayer_pong\\MultiplayerPongApp.java");
         String message = "";
+        String temp = "";
         try {
-            read = new Scanner(pongAppJava);
-            while (read.hasNext()) {
-                message += read.nextLine();
+            BufferedReader br = new BufferedReader(new FileReader(pongAppJava));
+            while ((temp = br.readLine()) != null) {
+                message += temp;
             }
         } catch (IOException e) {
             e.printStackTrace();
-            read.close();
         }
         String curveName = "secp256r1";
         File keyStoreFile = new File("src\\main\\resources\\keystore.p12");

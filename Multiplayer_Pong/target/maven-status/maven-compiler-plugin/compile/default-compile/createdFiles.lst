@@ -15,5 +15,6 @@ com\mycompany\multiplayer_pong\MultiplayerPongApp.class
 com\mycompany\multiplayer_pong\MultiplayerPongMainBtn.class
 com\mycompany\multiplayer_pong\EntityType.class
 com\mycompany\multiplayer_pong\MultiplayerPongApp$3.class
+com\mycompany\multiplayer_pong\MultiplayerPongApp$8.class
 com\mycompany\multiplayer_pong\BallComponent.class
 com\mycompany\multiplayer_pong\MultiplayerPongGameMenu.class

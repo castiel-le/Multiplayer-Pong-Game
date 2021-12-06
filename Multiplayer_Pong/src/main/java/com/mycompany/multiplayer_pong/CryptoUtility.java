@@ -16,6 +16,7 @@ import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.Base64;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -39,34 +40,23 @@ public class CryptoUtility {
     public CryptoUtility(char[] password) throws IOException {
         //Ensure the use of "JavaFX Password Field UI control" or something similar
         //Ensure string normalization
-        
-        FileInputStream fis = null;
         try {
-            if (checkKeyStoreExists()) {
-                fis = new FileInputStream("src\\main\\resources\\keystore.p12");
-            }
-            // Computing hash and storing it in a char[]
-            String tempPass = new String(computeHash(password.toString()));
-            ksHashedPassword = computeHash(tempPass);
+            // Create keystore
+            this.ksHashedPassword = computeHash(password.toString());
+            ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            ks.load(null, computeHash(this.ksHashedPassword.toString()));
             
-            ks.load(fis, ksHashedPassword);
-            System.out.println("KeyStore file created at \"src\\main\\resources\\keystore.p12\"");
-        } catch (NoSuchAlgorithmException | CertificateException e) {
-            e.printStackTrace();
-        } finally {
-            fis.close();
-        }
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream("src\\main\\resources\\keystore.p12");
+            // Store keystore
+            FileOutputStream fos = new FileOutputStream("keystore.p12");
             ks.store(fos, password);
-        } catch (IOException | KeyStoreException | NoSuchAlgorithmException 
-                                                 | CertificateException e) {
+            System.out.println("KeyStore stored");
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } finally {
-            fos.close();
         }
+        
     }
+    
+    
     
     public KeyStore getKeyStore() {
         return this.ks;
@@ -111,8 +101,9 @@ public class CryptoUtility {
             e.printStackTrace();
         }
         byte[] bytes = messageDigest.digest(message.getBytes(StandardCharsets.UTF_8));
-        Charset charset = Charset.forName("UTF-8");
-        String temp = new String(bytes, charset);
+        //Charset charset = Charset.forName("UTF-8");
+        //String temp = new String(bytes, charset);
+        String temp = Base64.getEncoder().encodeToString(bytes);
         hash = temp.toCharArray();
         return hash;
     }
