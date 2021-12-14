@@ -30,7 +30,6 @@
 import com.almasb.fxgl.animation.Interpolators;
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
-import com.almasb.fxgl.app.scene.MenuType;
 import com.almasb.fxgl.app.scene.SceneFactory;
 import com.almasb.fxgl.core.math.FXGLMath;
 import com.almasb.fxgl.core.serialization.Bundle;
@@ -48,21 +47,16 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
-import java.awt.*;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+
 import org.apache.commons.io.FileUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -72,23 +66,13 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.ECGenParameterSpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.text.Normalizer.Form;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import java.io.IOException;
 import java.util.Map;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
@@ -103,8 +87,7 @@ import java.security.cert.X509Certificate;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Scanner;
-    
+
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Extension;
@@ -123,14 +106,11 @@ import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-    
-import com.mycompany.multiplayer_pong.CryptoUtility;
+
 import java.io.BufferedReader;
-import java.io.FileFilter;
 import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.UnrecoverableEntryException;
 import javafx.scene.control.PasswordField;
@@ -149,8 +129,6 @@ public class MultiplayerPongApp extends GameApplication {
     
     private Entity player1;
     private Entity player2;
-    
-    private static CryptoUtility keyStore;
     
     private Entity ball;
     
@@ -270,39 +248,6 @@ public class MultiplayerPongApp extends GameApplication {
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
                 if (isServer) {
-                    javafx.scene.control.PasswordField passwordField = new PasswordField();
-                    var submitPassword = new javafx.scene.control.Button();
-                    submitPassword.setText("Submit");
-                    didKeyStoreNotExist = false;
-                    String prompt = "Enter your KeyStore password";
-                    File keyStoreFile = new File("src\\main\\resources\\keystore.p12");
-                    if (!keyStoreFile.exists()) {
-                        prompt = "Enter your new KeyStore password";
-                        didKeyStoreNotExist = true;
-                    }
-                    getDialogService().showBox(prompt, passwordField, submitPassword);
-                    String normalizedPassword = normalizeString(submitPassword.getText());
-                    try {
-                        keyStore = new CryptoUtility(normalizedPassword.toCharArray());
-                        SecretKey key = null;
-                        if (didKeyStoreNotExist) {
-                            key = keyStore.generateSecretKey(256);
-                            keyStore.storeSecretKeyEntry(key, "secretKey");
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    
-                    File signatureFile = new File("src\\main\\resources\\PongApp.sig");
-                    if(signatureFile.exists() && !signatureFile.isDirectory()){
-                        byte[] fileSignature = getByteArrayFromFile("src\\main\\resources\\PongApp.sig");
-                    }
-                    
-                    else{
-                        byte[] fileSignature = new byte[0];
-                    }
-                    
-                    
                     getDialogService().showConfirmationBox("Do you want to load old games?", load -> {
                         if(load){
                             while(!validLoad){
@@ -327,11 +272,7 @@ public class MultiplayerPongApp extends GameApplication {
                         getExecutor().startAsyncFX(() -> onServer());
                     });
                     // storing keystore
-                    try {
-                        keyStore.storeKeyStore();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+
                     //Start listening on the specified TCP port.
                     server.startAsync();
                     
@@ -504,60 +445,8 @@ public class MultiplayerPongApp extends GameApplication {
                 .buildAndPlay();
     }
 
-    
-    /**
-     * Method that runs once there is a winner
-     * @param winner 
-     */
     private void showGameOver(String winner) {
-        File f = new File("DBDriverInfo.properties");
-        System.out.println(f.getAbsolutePath());
-        File pongAppJava = new File("src/main/java/com/mycompany/multiplayer_pong/MultiplayerPongApp.java");
-        String message = "";
-        String temp = "";
-        try {
-            FileReader fr = new FileReader(pongAppJava);
-            BufferedReader br = new BufferedReader(fr);
-            StringBuffer sb = new StringBuffer();
-            while ((temp = br.readLine()) != null) {
-                sb.append(temp);
-                sb.append("\n");
-            }
-            message = sb.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        String curveName = "secp256r1";
-        File keyStoreFile = new File("src/main/resources/keystore.p12");
-        KeyPair keyPair = null;
-        PrivateKey priv = null;
-        if(didKeyStoreNotExist && isServer){
-            keyPair = generateKeyPairECDSA(curveName);
-            priv = keyPair.getPrivate();
-        }
-        else if (isServer) {
-            try {
-                priv = (PrivateKey) keyStore.getKeyStoreEntry("privateKey");
-            } catch (NoSuchAlgorithmException | UnrecoverableEntryException
-                    | KeyStoreException e) {
-                e.printStackTrace();
-            }
-        }
-        
-        String algorithm = "SHA1withECDSA";
-        byte[] signature = generateSignature(algorithm, priv, message);
-        writeByte(signature);
-        Certificate cert = null;
-        try {
-            cert = genCertificate(keyPair, algorithm, "selfSignedCert", 28);
-        } catch (OperatorCreationException | CertIOException | CertificateException e) {
-            e.printStackTrace();
-        }
-        Certificate[] chain = { cert };
-        //ks.storePrivateKeyEntry(priv, "privateKey", chain);
-        
-        
-        
+
         getDialogService().showMessageBox(winner + " won! Demo over\nThanks for playing", getGameController()::exit);
     }
 
@@ -642,9 +531,6 @@ public class MultiplayerPongApp extends GameApplication {
         });
     }
 
-    /**
-     * Method for loading the game
-     */
     public void loadSavedGame(){
         getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
             String savedPath = savedName + ".sav";
@@ -659,220 +545,18 @@ public class MultiplayerPongApp extends GameApplication {
                 System.out.println("Save file not found");
             }
             System.out.println(savedPath);
-            try {
-            keyStore.decryptFile("AES/GCM/NoPadding", (SecretKey) keyStore.getKeyStoreEntry("secretKey"), keyStore.generateGCMIV(), saveFile, saveFile);
-            } catch (NoSuchAlgorithmException | BadPaddingException | NoSuchPaddingException
-                                | InvalidKeyException | InvalidAlgorithmParameterException 
-                                | IllegalBlockSizeException | IOException 
-                                | UnrecoverableEntryException | KeyStoreException e) {
-                e.printStackTrace();
-            }
         });
     }
 
-    /**
-     * Method for saving the game
-     */
     public static void saveGame(){
+//        javafx.scene.control.PasswordField passwordField = new PasswordField();
+//        var submitPassword = new javafx.scene.control.Button();
+//        submitPassword.setText("Submit");
+//        getDialogService().showBox(prompt, passwordField, submitPassword);
         getDialogService().showInputBox("Enter Save Name:", savedName -> {
             String savedPath = savedName + ".sav";
             File saveFile = new File(savedPath);
             getSaveLoadService().saveAndWriteTask(savedPath).run();
-            SecretKey key = null;
-            byte[] iv = new byte[0];
-            try {
-                key = (SecretKey) keyStore.getKeyStoreEntry("secretKey");
-                //Generate GCM IV.
-                iv = keyStore.generateGCMIV();
-                keyStore.encryptFile("AES/GCM/NoPadding", key, iv, saveFile, saveFile);
-            } catch (NoSuchAlgorithmException | BadPaddingException | NoSuchPaddingException
-                                | InvalidKeyException | InvalidAlgorithmParameterException 
-                                | IllegalBlockSizeException | IOException 
-                                | UnrecoverableEntryException | KeyStoreException e) {
-                e.printStackTrace();
-            }
         });
-    }
-    
-    /**
-     * Generates a key pair using ECDSA
-     * @param curveName
-     * @return 
-     */
-    KeyPair generateKeyPairECDSA(String curveName) {
-        
-        KeyPair keypair = null;
-        try {
-        ECGenParameterSpec ecParaSpec = new ECGenParameterSpec(curveName);
-        
-        /**
-         * getInstance method of the key pair generator takes the label "EC"
-         * and the Provider ("SunEC") for the Crypto schemes.
-         */
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", "SunEC");
-        generator.initialize(ecParaSpec);
-        
-        //Generate the key pair
-        keypair = generator.genKeyPair();
-        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | NoSuchProviderException e) {
-            System.out.println("\nERROR occured while generating keypair.");
-        }
-        return keypair;
-    }
-    
-    /**
-     * Generates a certificate that wraps the private and public key pair
-     * @param keyPair
-     * @param algo
-     * @param name
-     * @param days
-     * @return
-     * @throws OperatorCreationException
-     * @throws CertIOException
-     * @throws CertificateException 
-     */
-    private static X509Certificate genCertificate(KeyPair keyPair, String algo, String name, int days) throws OperatorCreationException,
-            CertIOException, CertificateException {
-        Instant now = Instant.now();
-        Date before = Date.from(now);
-        Date after = Date.from(now.plus(java.time.Duration.ofDays(days)));
-        ContentSigner contentSigner = new JcaContentSignerBuilder(algo).build(keyPair.getPrivate());
-        X500Name x500Name = new X500Name("CN=" + name);
-        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(x500Name, BigInteger.valueOf(now.toEpochMilli()),
-                                                                                before, after, x500Name, keyPair.getPublic())
-                                                                                                           .addExtension(Extension.subjectKeyIdentifier, false, hashPublicKey(keyPair.getPublic()))
-                                                                                                           .addExtension(Extension.authorityKeyIdentifier, false, hashAuthorityPublicKey(keyPair.getPublic()))
-                                                                                                           .addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
-        return new JcaX509CertificateConverter().getCertificate(certBuilder.build(contentSigner));
-    }
-    
-    /**
-     * Hashes public key, then returns a SubjectKeyIdentifier
-     * @param publicKey
-     * @return
-     * @throws OperatorCreationException
-     * @throws CertIOException 
-     */
-    private static SubjectKeyIdentifier hashPublicKey(PublicKey publicKey) throws OperatorCreationException, 
-            CertIOException {
-        SubjectPublicKeyInfo info = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
-        
-        DigestCalculator digest = new BcDigestCalculatorProvider().get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
-        
-        return new X509ExtensionUtils(digest).createSubjectKeyIdentifier(info);
-    }
-    
-    /**
-     * Hashes an authority public key, returns AuthorityPublicKey
-     * @param publicKey
-     * @return
-     * @throws OperatorCreationException 
-     */
-    private static AuthorityKeyIdentifier hashAuthorityPublicKey(PublicKey publicKey) throws OperatorCreationException {
-        SubjectPublicKeyInfo info = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
-        DigestCalculator digest = new BcDigestCalculatorProvider().get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
-        return new X509ExtensionUtils(digest).createAuthorityKeyIdentifier(info);
-    }
-    
-    /**
-     * Generates the signature of a message using a private key and the specified algorithm
-     * @param algorithm
-     * @param privatekey
-     * @param message
-     * @return 
-     */
-    byte[] generateSignature (String algorithm, PrivateKey privatekey, String message){
-        
-        byte[] signature = null;
-        try {
-        //Create an instance of the signature scheme for the given signature algorithm
-        Signature sig = Signature.getInstance(algorithm, "SunEC");
-        
-        //Initialize the signature scheme
-        sig.initSign(privatekey);
-        
-        //Compute the signature
-        sig.update(message.getBytes("UTF-8"));
-        signature = sig.sign();
-        
-        } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | UnsupportedEncodingException | SignatureException e) {
-            System.out.println("\nERROR occured while generating signature.");
-        }
-        
-        return signature;
-    }
-    
-    /**
-     * Signs file
-     * @param bytes 
-     */
-    static void writeByte(byte[] bytes)
-    {
-        try {
-        Files.write(Paths.get("src/main/resources/PongApp.sig"), bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        /*//if (!isServer) {
-            try {
-
-                // Initialize a pointer
-                // in file using OutputStream
-                OutputStream
-                    os
-                    = new FileOutputStream("src\\main\\resources\\PongApp.sig");
-
-                // Starts writing the bytes in it
-                os.write(bytes);
-                System.out.println("Successfully"
-                                   + " byte inserted");
-
-                // Close the file
-                os.close();
-            }
-
-            catch (IOException e) {
-                System.out.println("Exception: " + e);
-            }
-        //}*/
-    }
-    static byte[] getByteArrayFromFile(String filePath){
-         byte[] byteArray = new byte[0];
-        try { 
-            byteArray = FileUtils.readFileToByteArray(new File(filePath));
-            return  byteArray;
-            
-        }
-        catch(IOException e){
-            System.out.println(e.getMessage());
-        }
-        
-        return  byteArray;
-        
-    }
-    
-    boolean verifySignature(byte[] signature, PublicKey publickey, String algorithm, String message) 
-            throws NoSuchAlgorithmException, NoSuchProviderException, 
-            InvalidKeyException, UnsupportedEncodingException, SignatureException {
-        
-        //Create an instance of the signature scheme for the given signature algorithm
-        Signature sig = Signature.getInstance(algorithm, "SunEC");
-        
-        //Initialize the signature verification scheme.
-        sig.initVerify(publickey);
-        
-        //Compute the signature.
-        sig.update(message.getBytes("UTF-8"));
-        
-        //Verify the signature.
-        boolean validSignature = sig.verify(signature);
-        
-        if(validSignature) {
-            System.out.println("\nSignature is valid");
-        } else {
-            System.out.println("\nSignature is NOT valid!!!");
-        }
-        
-        return validSignature;
     }
 }
