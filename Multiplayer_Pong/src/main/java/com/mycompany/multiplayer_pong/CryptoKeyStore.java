@@ -196,7 +196,6 @@ public class CryptoKeyStore {
     public void storeSecretKey(SecretKey sk) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException {
         ProtectionParameter pp = new PasswordProtection(this.hashString);
 
-        System.out.println(sk.toString());
         SecretKeyEntry ske = new SecretKeyEntry(sk);
 
         ks.setEntry("SECRET_KEY", ske, pp);
@@ -224,17 +223,17 @@ public class CryptoKeyStore {
         return cert.getPublicKey();
     }
 
-    public static void main(String[] args) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnrecoverableKeyException {
-        var keystore = new CryptoKeyStore("yikes");
-        System.out.println(keystore.getSecretKey().toString());
-        System.out.println(keystore.getPrivateKey().toString());
-        System.out.println(keystore.getPublicKey().toString());
-        var seckey = keystore.generateKey(256);
-        var IV = keystore.generateGCMIV();
-        File inputF = new File("wtf.sav");
-        File outputF = new File("wtf.sav.enc");
-        keystore.encryptFile(keystore.ALGORITHM, seckey, IV, inputF, outputF);
-        Files.write(Paths.get(keystore.IV_PATH), IV);
-        Files.deleteIfExists(Paths.get("wtf.sav"));
-    }
+//    public static void main(String[] args) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnrecoverableKeyException {
+//        var keystore = new CryptoKeyStore("yikes");
+//        System.out.println(keystore.getSecretKey().toString());
+//        System.out.println(keystore.getPrivateKey().toString());
+//        System.out.println(keystore.getPublicKey().toString());
+//        var seckey = keystore.generateKey(256);
+//        var IV = keystore.generateGCMIV();
+//        File inputF = new File("wtf.sav");
+//        File outputF = new File("wtf.sav.enc");
+//        keystore.encryptFile(keystore.ALGORITHM, seckey, IV, inputF, outputF);
+//        Files.write(Paths.get(keystore.IV_PATH), IV);
+//        Files.deleteIfExists(Paths.get("wtf.sav"));
+//    }
 }

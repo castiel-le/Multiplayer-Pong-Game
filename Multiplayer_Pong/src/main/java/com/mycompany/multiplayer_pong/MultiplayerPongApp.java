@@ -126,6 +126,8 @@ public class MultiplayerPongApp extends GameApplication {
     private boolean isServer = false;
     private boolean didKeyStoreNotExist;
     private Connection<Bundle> connection;
+
+    private CryptoKeyStore cks;
     
     private Entity player1;
     private Entity player2;
@@ -247,7 +249,28 @@ public class MultiplayerPongApp extends GameApplication {
                 //this line is needed in order for entities to be spawned
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
+
+
                 if (isServer) {
+                    javafx.scene.control.PasswordField passwordField = new PasswordField();
+                    var submitPassword = new javafx.scene.control.Button("Enter");
+                    String prompt = "Enter your password:";
+                    getDialogService().showBox(prompt, passwordField, submitPassword);
+                    var checkValidPassword = false;
+                    while(!checkValidPassword) {
+                        try {
+                            cks = new CryptoKeyStore(passwordField.getText());
+                            checkValidPassword = true;
+                        } catch (KeyStoreException e) {
+                            e.printStackTrace();
+                        } catch (CertificateException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     getDialogService().showConfirmationBox("Do you want to load old games?", load -> {
                         if(load){
                             while(!validLoad){
@@ -549,10 +572,6 @@ public class MultiplayerPongApp extends GameApplication {
     }
 
     public static void saveGame(){
-//        javafx.scene.control.PasswordField passwordField = new PasswordField();
-//        var submitPassword = new javafx.scene.control.Button();
-//        submitPassword.setText("Submit");
-//        getDialogService().showBox(prompt, passwordField, submitPassword);
         getDialogService().showInputBox("Enter Save Name:", savedName -> {
             String savedPath = savedName + ".sav";
             File saveFile = new File(savedPath);
