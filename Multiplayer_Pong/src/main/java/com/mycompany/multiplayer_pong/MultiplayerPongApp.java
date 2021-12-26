@@ -55,16 +55,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -111,8 +102,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.KeyStoreException;
-import java.security.UnrecoverableEntryException;
+
 import javafx.scene.control.PasswordField;
 import javax.crypto.SecretKey;
 
@@ -127,7 +117,7 @@ public class MultiplayerPongApp extends GameApplication {
     private boolean didKeyStoreNotExist;
     private Connection<Bundle> connection;
 
-    private CryptoKeyStore cks;
+    private static CryptoKeyStore cks;
     
     private Entity player1;
     private Entity player2;
@@ -142,6 +132,11 @@ public class MultiplayerPongApp extends GameApplication {
 
     private boolean doneOnce = false;
 
+    private static final String ALGO = "AES/GCM/NoPadding";
+
+    private final String KEYSTORE_PATH = "src/main/resources/assets/keystore/keystore.p12";
+
+    private final String APPPATH = "src/main/java/com/mycompany/multiplayer_pong/MultiplayerPongApp.java";
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setTitle("Pong");
@@ -245,31 +240,17 @@ public class MultiplayerPongApp extends GameApplication {
 
                 //Add background color to the game window.
                 getGameScene().setBackgroundColor(Color.rgb(153, 204, 255));
-                
+
                 //this line is needed in order for entities to be spawned
                 getGameWorld().addEntityFactory(new MultiplayerPongFactory());
 
-
-
                 if (isServer) {
-                    javafx.scene.control.PasswordField passwordField = new PasswordField();
-                    var submitPassword = new javafx.scene.control.Button("Enter");
-                    String prompt = "Enter your password:";
-                    getDialogService().showBox(prompt, passwordField, submitPassword);
-                    var checkValidPassword = false;
-                    while(!checkValidPassword) {
-                        try {
-                            cks = new CryptoKeyStore(passwordField.getText());
-                            checkValidPassword = true;
-                        } catch (KeyStoreException e) {
-                            e.printStackTrace();
-                        } catch (CertificateException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        }
+                    File keystore = new File(KEYSTORE_PATH);
+                    if(!keystore.exists()){
+                        notExistKeyStore();
+                    }
+                    else{
+                        validateSig();
                     }
                     getDialogService().showConfirmationBox("Do you want to load old games?", load -> {
                         if(load){
@@ -298,8 +279,8 @@ public class MultiplayerPongApp extends GameApplication {
 
                     //Start listening on the specified TCP port.
                     server.startAsync();
-                    
-                    
+
+
                 } else {
                     javafx.scene.control.TextField input = new javafx.scene.control.TextField();
                     javafx.scene.control.Button submit = new Button("Enter");
@@ -328,13 +309,49 @@ public class MultiplayerPongApp extends GameApplication {
         }, Duration.seconds(0.5));
         getWorldProperties().<Integer>addListener("player1score", (old, newScore) -> {
             if (newScore == 11) {
-                showGameOver("Player 1");
+                try {
+                    showGameOver("Player 1");
+                } catch (UnrecoverableKeyException e) {
+                    e.printStackTrace();
+                } catch (CertificateException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                } catch (SignatureException e) {
+                    e.printStackTrace();
+                } catch (NoSuchProviderException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
         getWorldProperties().<Integer>addListener("player2score", (old, newScore) -> {
             if (newScore == 11) {
-                showGameOver("Player 2");
+                try {
+                    showGameOver("Player 2");
+                } catch (UnrecoverableKeyException e) {
+                    e.printStackTrace();
+                } catch (CertificateException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                } catch (SignatureException e) {
+                    e.printStackTrace();
+                } catch (NoSuchProviderException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -468,8 +485,10 @@ public class MultiplayerPongApp extends GameApplication {
                 .buildAndPlay();
     }
 
-    private void showGameOver(String winner) {
-
+    private void showGameOver(String winner) throws UnrecoverableKeyException, CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, SignatureException, NoSuchProviderException, InvalidKeyException {
+        if(isServer) {
+            FileSignature.generateSignature(cks.getPrivateKey(), APPPATH);
+        }
         getDialogService().showMessageBox(winner + " won! Demo over\nThanks for playing", getGameController()::exit);
     }
 
@@ -556,26 +575,127 @@ public class MultiplayerPongApp extends GameApplication {
 
     public void loadSavedGame(){
         getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
-            String savedPath = savedName + ".sav";
-            File saveFile = new File(savedName + ".sav");
+            String encryptsavedPath = savedName + ".enc";
+            File encryptedsaveFile = new File(encryptsavedPath);
             boolean saveExists = false;
-            if (saveFile.exists()) {
+            if (encryptedsaveFile.exists()) {
                 saveExists = true;
             }
             if (saveExists) {
+                String savedPath = savedName + ".sav";
+                File savedFile = new File(savedPath);
+                try {
+                    cks.decryptFile(ALGO, cks.getSecretKey(), encryptedsaveFile, savedFile);
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (BadPaddingException e) {
+                    e.printStackTrace();
+                } catch (NoSuchPaddingException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                } catch (InvalidAlgorithmParameterException e) {
+                    e.printStackTrace();
+                } catch (IllegalBlockSizeException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (CertificateException e) {
+                    e.printStackTrace();
+                } catch (UnrecoverableKeyException e) {
+                    e.printStackTrace();
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                }
                 getSaveLoadService().readAndLoadTask(savedPath).run();
             } else {
                 System.out.println("Save file not found");
             }
-            System.out.println(savedPath);
         });
     }
 
     public static void saveGame(){
         getDialogService().showInputBox("Enter Save Name:", savedName -> {
             String savedPath = savedName + ".sav";
-            File saveFile = new File(savedPath);
             getSaveLoadService().saveAndWriteTask(savedPath).run();
+            File saveFile = new File(savedPath);
+            File encryptedFile = new File(savedName + ".enc");
+            try {
+                cks.encryptFile(ALGO, cks.getSecretKey(), saveFile, encryptedFile);
+                saveFile.delete();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (BadPaddingException e) {
+                e.printStackTrace();
+            } catch (NoSuchPaddingException e) {
+                e.printStackTrace();
+            } catch (InvalidKeyException e) {
+                e.printStackTrace();
+            } catch (InvalidAlgorithmParameterException e) {
+                e.printStackTrace();
+            } catch (IllegalBlockSizeException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (CertificateException e) {
+                e.printStackTrace();
+            } catch (UnrecoverableKeyException e) {
+                e.printStackTrace();
+            } catch (KeyStoreException e) {
+                e.printStackTrace();
+            }
         });
     }
+
+    public void notExistKeyStore(){
+        String pwd = getPwd();
+        try {
+            cks = new CryptoKeyStore(pwd);
+            cks.buildKeyStore();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getPwd(){
+        javafx.scene.control.PasswordField passwordField = new PasswordField();
+        var submitPassword = new javafx.scene.control.Button("Enter");
+        String prompt = "Enter your password:";
+        getDialogService().showBox(prompt, passwordField, submitPassword);
+        return passwordField.getText();
+    }
+    public void validateSig(){
+        String pwd = getPwd();
+        var validPwd = false;
+        while(!validPwd){
+            try {
+                cks = new CryptoKeyStore(pwd);
+                FileSignature.verifySignature(cks.getPublicKey(), APPPATH);
+                validPwd = true;
+            } catch (CertificateException e) {
+                e.printStackTrace();
+            } catch (KeyStoreException e) {
+                e.printStackTrace();
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (UnrecoverableKeyException e) {
+                e.printStackTrace();
+            } catch (SignatureException e) {
+                e.printStackTrace();
+            } catch (NoSuchProviderException e) {
+                e.printStackTrace();
+            } catch (InvalidKeyException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
+

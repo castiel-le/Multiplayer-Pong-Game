@@ -1,16 +1,21 @@
 package com.mycompany.multiplayer_pong;
 
+import javafx.scene.control.PasswordField;
+
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Base64;
 import java.security.KeyStore.*;
+
+import static com.almasb.fxgl.dsl.FXGL.getDialogService;
 
 public class CryptoKeyStore {
 
@@ -21,6 +26,8 @@ public class CryptoKeyStore {
     private KeyStore ks;
 
     private char[] hashString;
+
+    private byte[] GCMIV;
 
     private final String KEYSTORE_PATH = "src/main/resources/assets/keystore/keystore.p12";
 
@@ -52,8 +59,8 @@ public class CryptoKeyStore {
         this.hashString = computeHash("SHA3-256", password);
         cmd[cmd.length-1] = String.valueOf(this.hashString);
         ks = KeyStore.getInstance("PKCS12");
-        checkKeyStore(KEYSTORE_PATH);
     }
+
 
     public void createKeyStore() throws IOException {
         ProcessBuilder pb = new ProcessBuilder(cmd);
@@ -64,10 +71,7 @@ public class CryptoKeyStore {
         }
     }
 
-    public void checkKeyStore(String KEYSTORE_PATH
-    ) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException {
-        File keyFile = new File(KEYSTORE_PATH);
-        if (!keyFile.exists()) {
+    public void buildKeyStore() throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException {
             try {
                 createKeyStore();
                 loadKeyStore();
@@ -76,7 +80,6 @@ public class CryptoKeyStore {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
     }
 
     public void loadKeyStore() throws IOException, CertificateException, NoSuchAlgorithmException {
@@ -103,25 +106,31 @@ public class CryptoKeyStore {
     }
 
     //Method for generating 12 byte GCM Initialization Vector.
-    byte[] generateGCMIV() {
+    public void generateGCMIV() throws IOException {
         byte[] GCMIV = new byte[GCM_IV_LENGTH];
         SecureRandom random = new SecureRandom();
         random.nextBytes(GCMIV);
-        return GCMIV;
+        Files.write(Path.of(IV_PATH), GCMIV);
+    }
+
+    public byte[] readGCMIV() throws IOException {
+        return Files.readAllBytes(Path.of(IV_PATH));
     }
 
     // Method to encrypt a file
-    public void encryptFile(String algorithm, SecretKey key, byte[] IV, File inputFile, File outputFile)
+    public void encryptFile(String algorithm, SecretKey key, File inputFile, File outputFile)
             throws NoSuchAlgorithmException, BadPaddingException,
             NoSuchPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException,
             FileNotFoundException, IOException {
-
+        if(!Files.exists(Path.of(IV_PATH))){
+            generateGCMIV();
+        }
         //Create an instance of the Cipher class
         Cipher cipher = Cipher.getInstance(algorithm);
 
         // Create GCMParameterSpec
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, IV);
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, readGCMIV());
 
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
 
@@ -152,8 +161,7 @@ public class CryptoKeyStore {
     }
 
     //Method to decrypt a file
-    public void decryptFile(String algorithm, SecretKey key,
-                     byte[] IV, File inputFile,
+    public void decryptFile(String algorithm, SecretKey key, File inputFile,
                      File outputFile)
             throws NoSuchAlgorithmException, BadPaddingException,
             NoSuchPaddingException, InvalidKeyException,
@@ -164,7 +172,7 @@ public class CryptoKeyStore {
         Cipher cipher = Cipher.getInstance(algorithm);
 
         // Create GCMParameterSpec
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, IV);
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, readGCMIV());
 
         cipher.init(Cipher.DECRYPT_MODE, key, gcmParameterSpec);
 
@@ -222,6 +230,7 @@ public class CryptoKeyStore {
         Certificate cert = ks.getCertificate("KEY_PAIR");
         return cert.getPublicKey();
     }
+
 
 //    public static void main(String[] args) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnrecoverableKeyException {
 //        var keystore = new CryptoKeyStore("yikes");
