@@ -572,7 +572,7 @@ public class MultiplayerPongApp extends GameApplication {
             }
         });
     }
-
+    //Custom load game
     public void loadSavedGame(){
         getDialogService().showInputBox("Enter Saved Game's Name", savedName -> {
             String encryptsavedPath = savedName + ".enc";
@@ -613,7 +613,7 @@ public class MultiplayerPongApp extends GameApplication {
             }
         });
     }
-
+    // Custom save game
     public static void saveGame(){
         getDialogService().showInputBox("Enter Save Name:", savedName -> {
             String savedPath = savedName + ".sav";

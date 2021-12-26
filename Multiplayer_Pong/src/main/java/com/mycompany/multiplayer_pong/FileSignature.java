@@ -12,15 +12,7 @@ public class FileSignature {
     private static final String ALGORITHM = "SHA256withECDSA";
     private static final String SIGNATUREPATH = "src/main/resources/assets/MultiplayerPong.sig";
 
-    /**
-     * Method for generating digital signature.
-     *
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchProviderException
-     * @throws InvalidKeyException
-     * @throws IOException
-     * @throws SignatureException
-     */
+    //Method for generating digital signature.
     public static void generateSignature(PrivateKey privatekey, String pongPath) throws NoSuchAlgorithmException, NoSuchProviderException,
             InvalidKeyException, IOException, SignatureException {
 
@@ -41,18 +33,7 @@ public class FileSignature {
 
     }
 
-    /**
-     * Method for verifying digital signature.
-     *
-     * @param publickey
-     * @param pongPath
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchProviderException
-     * @throws InvalidKeyException
-     * @throws IOException
-     * @throws SignatureException
-     */
+    //Method for verifying digital signature.
     public static boolean verifySignature(PublicKey publickey, String pongPath)
             throws NoSuchAlgorithmException, NoSuchProviderException,
             InvalidKeyException, IOException, SignatureException {

@@ -55,9 +55,10 @@ public class CryptoKeyStore {
             "-storepass",
             ""
     };
+
     public CryptoKeyStore(String password) throws KeyStoreException, CertificateException, IOException, NoSuchAlgorithmException {
         this.hashString = computeHash("SHA3-256", password);
-        cmd[cmd.length-1] = String.valueOf(this.hashString);
+        cmd[cmd.length - 1] = String.valueOf(this.hashString);
         ks = KeyStore.getInstance("PKCS12");
     }
 
@@ -65,39 +66,35 @@ public class CryptoKeyStore {
     public void createKeyStore() throws IOException {
         ProcessBuilder pb = new ProcessBuilder(cmd);
         var start = pb.start();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(start.getInputStream()))){
-            while (br.readLine() != null){
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(start.getInputStream()))) {
+            while (br.readLine() != null) {
             }
         }
     }
 
     public void buildKeyStore() throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException {
-            try {
-                createKeyStore();
-                loadKeyStore();
-                storeSecretKey(generateKey(256));
-                saveKeyStore();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            createKeyStore();
+            loadKeyStore();
+            storeSecretKey(generateKey(256));
+            saveKeyStore();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void loadKeyStore() throws IOException, CertificateException, NoSuchAlgorithmException {
         ks.load(new FileInputStream(KEYSTORE_PATH), this.hashString);
     }
 
-    public char[] computeHash(String algorithm, String password)throws NoSuchAlgorithmException{
-            MessageDigest digest = MessageDigest.getInstance(algorithm);
-            byte[] hashbytes = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-            String strpwd = Base64.getEncoder().encodeToString(hashbytes);
-            return strpwd.toCharArray();
+    public char[] computeHash(String algorithm, String password) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance(algorithm);
+        byte[] hashbytes = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+        String strpwd = Base64.getEncoder().encodeToString(hashbytes);
+        return strpwd.toCharArray();
     }
 
-    /**
-     * *
-     * Method for generating secret key takes an integer n; n can be 128, 192 or
-     * 256.
-     */
+    //Method for generating secret key takes an integer n; n can be 128, 192 or 256.
     SecretKey generateKey(int n) throws NoSuchAlgorithmException {
         KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
         keyGenerator.init(n); //Initialize the key generator
@@ -123,7 +120,7 @@ public class CryptoKeyStore {
             NoSuchPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException,
             FileNotFoundException, IOException {
-        if(!Files.exists(Path.of(IV_PATH))){
+        if (!Files.exists(Path.of(IV_PATH))) {
             generateGCMIV();
         }
         //Create an instance of the Cipher class
@@ -162,7 +159,7 @@ public class CryptoKeyStore {
 
     //Method to decrypt a file
     public void decryptFile(String algorithm, SecretKey key, File inputFile,
-                     File outputFile)
+                            File outputFile)
             throws NoSuchAlgorithmException, BadPaddingException,
             NoSuchPaddingException, InvalidKeyException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException,
@@ -221,7 +218,7 @@ public class CryptoKeyStore {
 
     public PrivateKey getPrivateKey() throws CertificateException, IOException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException {
         loadKeyStore();
-        PrivateKey prk = (PrivateKey)  ks.getKey("KEY_PAIR", this.hashString);
+        PrivateKey prk = (PrivateKey) ks.getKey("KEY_PAIR", this.hashString);
         return prk;
     }
 
@@ -230,19 +227,4 @@ public class CryptoKeyStore {
         Certificate cert = ks.getCertificate("KEY_PAIR");
         return cert.getPublicKey();
     }
-
-
-//    public static void main(String[] args) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnrecoverableKeyException {
-//        var keystore = new CryptoKeyStore("yikes");
-//        System.out.println(keystore.getSecretKey().toString());
-//        System.out.println(keystore.getPrivateKey().toString());
-//        System.out.println(keystore.getPublicKey().toString());
-//        var seckey = keystore.generateKey(256);
-//        var IV = keystore.generateGCMIV();
-//        File inputF = new File("wtf.sav");
-//        File outputF = new File("wtf.sav.enc");
-//        keystore.encryptFile(keystore.ALGORITHM, seckey, IV, inputF, outputF);
-//        Files.write(Paths.get(keystore.IV_PATH), IV);
-//        Files.deleteIfExists(Paths.get("wtf.sav"));
-//    }
 }
