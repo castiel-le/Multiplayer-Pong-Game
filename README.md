@@ -1,4 +1,4 @@
-# DataCom_Project_2_FXGL
+# Multiplayer Pong Game
 Castiel Le
 Alexander Arella Girardot
 Edris Zoghlami
